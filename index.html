@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rajini — Interactive Portfolio</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
+</head>
+<body>
+<div id="boot"><div class="boot-mark">R.</div><div>ENTERING PORTFOLIO WORLD</div><small>Loading 3D experience…</small></div>
+<div id="hud"><div class="brand">RAJINI<span>.</span></div><div class="controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> DRIVE <span>·</span> <kbd>SPACE</kbd> BRAKE</div><button id="help">?</button></div>
+<div id="scene"></div><div id="hint">Drive around and discover the portfolio</div>
+<div id="panel"><button id="close">×</button><p id="panelLabel">PROJECT</p><h2 id="panelTitle">Title</h2><div id="panelBody"></div></div>
+<div id="helpPanel"><button id="closeHelp">×</button><h2>How to explore</h2><p>Drive the little vehicle around the island and approach the glowing locations.</p><div class="keys"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span><span><kbd>SPACE</kbd> Brake</span><span><kbd>MOUSE</kbd> Look around</span></div></div>
+<script type="module" src="script.js"></script>
+</body></html>
