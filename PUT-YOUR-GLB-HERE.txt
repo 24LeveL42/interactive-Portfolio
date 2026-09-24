@@ -1,0 +1,1 @@
+Put your custom 3D model here as assets/default-model.glb, then set USE_CUSTOM_MODEL = true in script.js.
