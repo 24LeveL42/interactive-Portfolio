@@ -1,1 +1,1 @@
-Place your custom Blender export here as player.glb
+Put your Blender model here as player.glb
