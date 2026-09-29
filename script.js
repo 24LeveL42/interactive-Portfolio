@@ -32,7 +32,6 @@ renderer.setSize(
 
 renderer.shadowMap.enabled = true;
 
-// IMPORTANT FOR PEN / TABLET
 renderer.domElement.style.touchAction = "none";
 renderer.domElement.style.userSelect = "none";
 renderer.domElement.style.webkitUserSelect = "none";
@@ -101,7 +100,11 @@ function createRoad(x, z, width, depth) {
     })
   );
 
-  road.position.set(x, 0.08, z);
+  road.position.set(
+    x,
+    0.08,
+    z
+  );
 
   scene.add(road);
 }
@@ -128,7 +131,11 @@ function createLightPole(x, z) {
     })
   );
 
-  pole.position.set(x, 2.5, z);
+  pole.position.set(
+    x,
+    2.5,
+    z
+  );
 
   scene.add(pole);
 
@@ -143,7 +150,11 @@ function createLightPole(x, z) {
     })
   );
 
-  lamp.position.set(x, 5.1, z);
+  lamp.position.set(
+    x,
+    5.1,
+    z
+  );
 
   scene.add(lamp);
 
@@ -153,16 +164,21 @@ function createLightPole(x, z) {
     18
   );
 
-  light.position.copy(lamp.position);
+  light.position.copy(
+    lamp.position
+  );
 
   scene.add(light);
 }
 
-for (let x = -60; x <= 60; x += 20) {
+for (
+  let x = -60;
+  x <= 60;
+  x += 20
+) {
 
   createLightPole(11, x);
   createLightPole(-11, x);
-
 }
 
 
@@ -184,7 +200,11 @@ function createTree(x, z) {
     })
   );
 
-  trunk.position.set(x, 1.25, z);
+  trunk.position.set(
+    x,
+    1.25,
+    z
+  );
 
   scene.add(trunk);
 
@@ -199,16 +219,23 @@ function createTree(x, z) {
     })
   );
 
-  leaves.position.set(x, 3.2, z);
+  leaves.position.set(
+    x,
+    3.2,
+    z
+  );
 
   scene.add(leaves);
 }
 
-for (let i = -70; i <= 70; i += 14) {
+for (
+  let i = -70;
+  i <= 70;
+  i += 14
+) {
 
   createTree(-15, i);
   createTree(15, i);
-
 }
 
 
@@ -385,6 +412,105 @@ scene.add(car);
 
 
 // =====================================================
+// CAMERA RIG
+// =====================================================
+
+// Camera is now attached to the car.
+//
+// This is the important part:
+//
+// car
+//  └── cameraRig
+//       └── camera
+//
+// So when the car moves,
+// the camera automatically moves with it.
+
+const cameraRig =
+  new THREE.Group();
+
+car.add(cameraRig);
+
+
+// Camera position relative to car
+
+cameraRig.position.set(
+  0,
+  5.5,
+  11
+);
+
+
+// Camera looks toward car
+
+cameraRig.add(camera);
+
+camera.position.set(
+  0,
+  0,
+  0
+);
+
+
+// =====================================================
+// CAMERA ROTATION
+// =====================================================
+
+let cameraYaw = 0;
+
+let cameraPitch = -0.25;
+
+
+// No 180-degree restriction.
+//
+// cameraYaw can keep increasing forever:
+//
+// 0
+// 360
+// 720
+// -360
+// etc.
+//
+// Three.js will automatically wrap the rotation.
+
+
+// =====================================================
+// CAMERA ZOOM
+// =====================================================
+
+let cameraDistance = 11;
+
+const MIN_ZOOM = 5;
+const MAX_ZOOM = 30;
+
+
+// =====================================================
+// CAMERA UPDATE
+// =====================================================
+
+function updateCamera() {
+
+  // Rotate camera rig around car
+
+  cameraRig.rotation.y =
+    cameraYaw;
+
+  cameraRig.rotation.x =
+    cameraPitch;
+
+
+  // Move camera behind / around car
+
+  cameraRig.position.set(
+    0,
+    5.5,
+    cameraDistance
+  );
+
+}
+
+
+// =====================================================
 // PORTFOLIO STATIONS
 // =====================================================
 
@@ -455,7 +581,8 @@ function createStation(data) {
       })
     );
 
-  platform.position.y = 0.15;
+  platform.position.y =
+    0.15;
 
   group.add(platform);
 
@@ -474,7 +601,8 @@ function createStation(data) {
       })
     );
 
-  pillar.position.y = 1.7;
+  pillar.position.y =
+    1.7;
 
   group.add(pillar);
 
@@ -497,7 +625,8 @@ function createStation(data) {
     data.position[2]
   );
 
-  group.userData = data;
+  group.userData =
+    data;
 
   scene.add(group);
 
@@ -586,14 +715,8 @@ document
 
 
 // =====================================================
-// PEN / TABLET CAMERA CONTROL
+// PEN / MOUSE CONTROL
 // =====================================================
-
-let cameraDistance = 11;
-
-let cameraAngle = 0;
-
-let cameraHeight = 6;
 
 let pointerDown = false;
 
@@ -604,14 +727,14 @@ let lastY = 0;
 let dragDistance = 0;
 
 
+// =====================================================
 // POINTER DOWN
-// Works with mouse + pen + touch
+// =====================================================
 
 renderer.domElement.addEventListener(
   "pointerdown",
   function (event) {
 
-    // Ignore right mouse button
     if (
       event.pointerType === "mouse" &&
       event.button !== 0
@@ -625,8 +748,12 @@ renderer.domElement.addEventListener(
 
     dragDistance = 0;
 
-    lastX = event.clientX;
-    lastY = event.clientY;
+    lastX =
+      event.clientX;
+
+    lastY =
+      event.clientY;
+
 
     try {
 
@@ -637,11 +764,15 @@ renderer.domElement.addEventListener(
     } catch (error) {}
 
   },
-  { passive: false }
+  {
+    passive: false
+  }
 );
 
 
+// =====================================================
 // POINTER MOVE
+// =====================================================
 
 renderer.domElement.addEventListener(
   "pointermove",
@@ -653,33 +784,40 @@ renderer.domElement.addEventListener(
     event.preventDefault();
 
     const dx =
-      event.clientX - lastX;
+      event.clientX -
+      lastX;
 
     const dy =
-      event.clientY - lastY;
+      event.clientY -
+      lastY;
+
 
     dragDistance +=
       Math.abs(dx) +
       Math.abs(dy);
 
 
-    // Horizontal rotation
+    // ===============================================
+    // 360 DEGREE ROTATION
+    // ===============================================
 
-    cameraAngle -=
+    cameraYaw -=
       dx * 0.008;
 
 
-    // Vertical camera movement
+    // ===============================================
+    // CAMERA PITCH
+    // ===============================================
 
-    cameraHeight -=
-      dy * 0.04;
+    cameraPitch -=
+      dy * 0.005;
 
 
-    cameraHeight =
+    cameraPitch =
       THREE.MathUtils.clamp(
-        cameraHeight,
-        2.5,
-        12
+        cameraPitch,
+        -1.0,
+        0.35
       );
 
 
@@ -690,11 +828,15 @@ renderer.domElement.addEventListener(
       event.clientY;
 
   },
-  { passive: false }
+  {
+    passive: false
+  }
 );
 
 
+// =====================================================
 // POINTER UP
+// =====================================================
 
 renderer.domElement.addEventListener(
   "pointerup",
@@ -713,11 +855,15 @@ renderer.domElement.addEventListener(
     } catch (error) {}
 
   },
-  { passive: false }
+  {
+    passive: false
+  }
 );
 
 
+// =====================================================
 // POINTER CANCEL
+// =====================================================
 
 renderer.domElement.addEventListener(
   "pointercancel",
@@ -730,7 +876,7 @@ renderer.domElement.addEventListener(
 
 
 // =====================================================
-// PEN BARREL BUTTON / RIGHT CLICK
+// PREVENT RIGHT CLICK MENU
 // =====================================================
 
 renderer.domElement.addEventListener(
@@ -747,20 +893,34 @@ renderer.domElement.addEventListener(
 // ZOOM
 // =====================================================
 
+// Mouse wheel / tablet wheel.
+//
+// Normal wheel:
+// zoom.
+//
+// Ctrl + wheel:
+// also zoom, with stronger control.
+
 renderer.domElement.addEventListener(
   "wheel",
   function (event) {
 
     event.preventDefault();
 
+    const multiplier =
+      event.ctrlKey
+        ? 0.025
+        : 0.01;
+
     cameraDistance +=
-      event.deltaY * 0.01;
+      event.deltaY *
+      multiplier;
 
     cameraDistance =
       THREE.MathUtils.clamp(
         cameraDistance,
-        5,
-        30
+        MIN_ZOOM,
+        MAX_ZOOM
       );
 
   },
@@ -846,7 +1006,9 @@ function openPanel(data) {
 }
 
 
+// =====================================================
 // CLOSE PANEL
+// =====================================================
 
 document
   .getElementById(
@@ -865,7 +1027,7 @@ document
 
 
 // =====================================================
-// STATION SELECTION
+// STATION CLICK
 // =====================================================
 
 const raycaster =
@@ -879,8 +1041,8 @@ window.addEventListener(
   "click",
   function (event) {
 
-    // Don't open a station
-    // when user was dragging camera
+    // If pen was dragging,
+    // don't treat it as a click.
 
     if (dragDistance > 8)
       return;
@@ -1098,7 +1260,9 @@ function animate() {
     );
 
 
+  // ===================================================
   // ACCELERATION
+  // ===================================================
 
   const moving =
     keys["w"] ||
@@ -1128,7 +1292,9 @@ function animate() {
     );
 
 
-  // FORWARD
+  // ===================================================
+  // DRIVE FORWARD
+  // ===================================================
 
   if (
     keys["w"] ||
@@ -1142,7 +1308,9 @@ function animate() {
   }
 
 
-  // BACKWARD
+  // ===================================================
+  // DRIVE BACKWARD
+  // ===================================================
 
   if (
     keys["s"] ||
@@ -1156,7 +1324,9 @@ function animate() {
   }
 
 
+  // ===================================================
   // STEERING
+  // ===================================================
 
   const steering =
     1.8 * delta;
@@ -1188,41 +1358,7 @@ function animate() {
   // CAMERA
   // ===================================================
 
-  const cameraOffset =
-    new THREE.Vector3(
-      Math.sin(cameraAngle) *
-        cameraDistance,
-
-      cameraHeight,
-
-      Math.cos(cameraAngle) *
-        cameraDistance
-    );
-
-
-  const desiredCamera =
-    car.position
-      .clone()
-      .add(cameraOffset);
-
-
-  const cameraTarget =
-    car.position.clone();
-
-
-  cameraTarget.y +=
-    1.3;
-
-
-  camera.position.lerp(
-    desiredCamera,
-    0.08
-  );
-
-
-  camera.lookAt(
-    cameraTarget
-  );
+  updateCamera();
 
 
   // ===================================================
