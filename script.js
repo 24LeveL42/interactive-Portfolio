@@ -1,508 +1,911 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-*{
-  box-sizing:border-box;
+// ==========================================
+// BASIC SETUP
+// ==========================================
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x102a38);
+scene.fog = new THREE.Fog(0x102a38, 45, 180);
+
+const camera = new THREE.PerspectiveCamera(
+  60,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  500
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
+
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+document.getElementById("game").appendChild(renderer.domElement);
+
+
+// ==========================================
+// LIGHTING
+// ==========================================
+
+const hemiLight = new THREE.HemisphereLight(
+  0xbdefff,
+  0x18313d,
+  2.5
+);
+
+scene.add(hemiLight);
+
+const sun = new THREE.DirectionalLight(
+  0xffffff,
+  3
+);
+
+sun.position.set(30, 60, 20);
+sun.castShadow = true;
+
+scene.add(sun);
+
+
+// ==========================================
+// GROUND
+// ==========================================
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(300, 300),
+  new THREE.MeshStandardMaterial({
+    color: 0x18313b,
+    roughness: 0.8
+  })
+);
+
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+
+scene.add(ground);
+
+
+// ==========================================
+// ROADS
+// ==========================================
+
+function createRoad(x, z, width, depth) {
+
+  const road = new THREE.Mesh(
+    new THREE.BoxGeometry(width, 0.15, depth),
+    new THREE.MeshStandardMaterial({
+      color: 0x242d33,
+      roughness: 0.9
+    })
+  );
+
+  road.position.set(x, 0.08, z);
+  road.receiveShadow = true;
+
+  scene.add(road);
 }
 
-html,
-body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#07131c;
-  font-family:Inter,Arial,sans-serif;
-  color:white;
+createRoad(0, 0, 18, 300);
+createRoad(0, 0, 300, 18);
+
+
+// ==========================================
+// ROAD LIGHTS
+// ==========================================
+
+function createLightPole(x, z) {
+
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.12, 5, 8),
+    new THREE.MeshStandardMaterial({
+      color: 0x657d86
+    })
+  );
+
+  pole.position.set(x, 2.5, z);
+
+  scene.add(pole);
+
+  const lamp = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 12),
+    new THREE.MeshBasicMaterial({
+      color: 0x4df6ff
+    })
+  );
+
+  lamp.position.set(x, 5.1, z);
+
+  scene.add(lamp);
+
+  const light = new THREE.PointLight(
+    0x4df6ff,
+    3,
+    18
+  );
+
+  light.position.copy(lamp.position);
+
+  scene.add(light);
 }
 
-#game{
-  position:relative;
-  width:100%;
-  height:100%;
-  overflow:hidden;
+for (let x = -60; x <= 60; x += 20) {
+  createLightPole(11, x);
+  createLightPole(-11, x);
 }
 
-canvas{
-  position:absolute;
-  inset:0;
-  display:block;
+
+// ==========================================
+// TREES
+// ==========================================
+
+function createTree(x, z) {
+
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.35, 2.5, 8),
+    new THREE.MeshStandardMaterial({
+      color: 0x5b4030
+    })
+  );
+
+  trunk.position.set(x, 1.25, z);
+
+  scene.add(trunk);
+
+  const leaves = new THREE.Mesh(
+    new THREE.SphereGeometry(1.5, 12, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0x20745d
+    })
+  );
+
+  leaves.position.set(x, 3.2, z);
+
+  scene.add(leaves);
 }
 
-/* LOADING */
+for (let i = -70; i <= 70; i += 14) {
 
-#loading{
-  position:fixed;
-  z-index:50;
-  inset:0;
+  createTree(-15, i);
+  createTree(15, i);
+}
 
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
 
-  background:
-    radial-gradient(
-      circle at center,
-      #17495a 0%,
-      #0b2632 40%,
-      #06131b 100%
+// ==========================================
+// LOAD YOUR CBD GLB
+// ==========================================
+
+const loader = new GLTFLoader();
+
+const modelURL = new URL(
+  "./CBD area.glb",
+  import.meta.url
+).href;
+
+loader.load(
+  modelURL,
+
+  function (gltf) {
+
+    const city = gltf.scene;
+
+    // Calculate size
+    const box = new THREE.Box3().setFromObject(city);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // Center model
+    city.position.x -= center.x;
+    city.position.z -= center.z;
+
+    // Scale model
+    const maxSize = Math.max(
+      size.x,
+      size.y,
+      size.z
     );
 
-  transition:opacity .8s;
-}
+    const targetSize = 100;
 
-#loading.hide{
-  opacity:0;
-  pointer-events:none;
-}
+    if (maxSize > 0) {
+      const scale = targetSize / maxSize;
+      city.scale.setScalar(scale);
+    }
 
-.loader-ring{
-  width:48px;
-  height:48px;
+    city.position.y = 0;
 
-  border:2px solid #285a69;
-  border-top-color:#4df6ff;
-  border-right-color:#a7fff3;
+    city.traverse(function (object) {
 
-  border-radius:50%;
+      if (object.isMesh) {
 
-  animation:spin 1s linear infinite;
+        object.castShadow = false;
+        object.receiveShadow = true;
 
-  margin-bottom:22px;
-}
+      }
 
-@keyframes spin{
-  to{
-    transform:rotate(360deg);
-  }
-}
+    });
 
-.loading-title{
-  font-size:30px;
-  font-weight:900;
-}
+    scene.add(city);
 
-.loading-title span,
-.brand span{
-  color:#4df6ff;
-}
+    console.log("CBD area loaded successfully.");
 
-.loading-sub{
-  margin-top:8px;
+  },
 
-  font-size:10px;
-  letter-spacing:4px;
+  function (progress) {
 
-  color:#b3d5df;
-}
+    if (progress.total) {
 
-/* TOP BAR */
+      const percent =
+        (progress.loaded / progress.total) * 100;
 
-.topbar{
-  position:absolute;
-  z-index:10;
+      console.log(
+        "CBD loading:",
+        percent.toFixed(0) + "%"
+      );
+    }
 
-  top:0;
-  left:0;
-  right:0;
+  },
 
-  height:76px;
+  function (error) {
 
-  padding:0 34px;
-
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-  pointer-events:none;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(3,18,28,.7),
-      transparent
+    console.error(
+      "CBD GLB failed to load:",
+      error
     );
+
+  }
+);
+
+
+// ==========================================
+// CAR
+// ==========================================
+
+const car = new THREE.Group();
+
+const body = new THREE.Mesh(
+  new THREE.BoxGeometry(2.4, 0.65, 4.2),
+  new THREE.MeshStandardMaterial({
+    color: 0x16d9ff,
+    metalness: 0.5,
+    roughness: 0.25
+  })
+);
+
+body.position.y = 0.75;
+body.castShadow = true;
+
+car.add(body);
+
+
+// roof
+
+const roof = new THREE.Mesh(
+  new THREE.BoxGeometry(1.7, 0.55, 1.8),
+  new THREE.MeshStandardMaterial({
+    color: 0x142a35,
+    metalness: 0.4,
+    roughness: 0.2
+  })
+);
+
+roof.position.set(0, 1.25, -0.15);
+
+car.add(roof);
+
+
+// wheels
+
+function createWheel(x, z) {
+
+  const wheel = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      0.42,
+      0.42,
+      0.3,
+      16
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x111111
+    })
+  );
+
+  wheel.rotation.z = Math.PI / 2;
+
+  wheel.position.set(
+    x,
+    0.45,
+    z
+  );
+
+  car.add(wheel);
 }
 
-.brand{
-  font-size:20px;
-  font-weight:900;
-}
-
-.module{
-  font-size:10px;
-  letter-spacing:2px;
-  color:#d0e5ec;
-}
-
-#menuBtn{
-  pointer-events:auto;
-
-  padding:11px 16px;
-
-  border:1px solid #4b7b8a;
-  border-radius:3px;
-
-  background:rgba(8,34,46,.7);
-
-  color:white;
-
-  cursor:pointer;
-
-  font-size:10px;
-  letter-spacing:2px;
-
-  box-shadow:
-    0 0 18px rgba(77,246,255,.12);
-}
-
-/* INTRO */
-
-.intro{
-  position:absolute;
-  z-index:5;
-
-  top:110px;
-  left:34px;
-
-  pointer-events:none;
-
-  text-shadow:
-    0 3px 30px rgba(0,0,0,.5);
-}
-
-.eyebrow{
-  font-size:10px;
-  letter-spacing:3px;
-
-  color:#4df6ff;
-
-  font-weight:700;
-}
-
-.intro h1{
-  margin:13px 0 14px;
-
-  font-size:clamp(34px,5vw,68px);
-
-  line-height:.98;
-
-  letter-spacing:-3px;
-
-  font-weight:700;
-}
-
-.intro h1 strong{
-  font-weight:900;
-}
-
-.intro p{
-  font-size:12px;
-  color:#d1e3e9;
-}
-
-.hint{
-  margin-top:18px;
-
-  font-size:10px;
-
-  color:#a1bbc5;
-
-  letter-spacing:1px;
-}
-
-/* HUD */
-
-#hud{
-  position:absolute;
-  z-index:5;
-
-  bottom:26px;
-  left:30px;
-  right:30px;
-
-  display:flex;
-  justify-content:space-between;
-
-  font-size:9px;
-  letter-spacing:1.7px;
-
-  color:#b3cbd3;
-
-  pointer-events:none;
-}
-
-.hud-left span{
-  color:#4df6ff;
-  font-size:12px;
-}
-
-#speedValue{
-  color:#4df6ff;
-
-  font-weight:800;
-
-  text-shadow:
-    0 0 8px rgba(77,246,255,.7);
-}
-
-/* CROSSHAIR */
-
-#crosshair{
-  position:absolute;
-  z-index:4;
-
-  left:50%;
-  top:50%;
-
-  width:12px;
-  height:12px;
-
-  transform:translate(-50%,-50%);
-
-  border:1px solid rgba(255,255,255,.6);
-
-  border-radius:50%;
-
-  pointer-events:none;
-
-  box-shadow:
-    0 0 8px #4df6ff;
-}
-
-/* PANELS */
-
-#panel,
-#menu{
-  position:absolute;
-  z-index:20;
-
-  top:50%;
-  left:50%;
-
-  transform:translate(-50%,-50%);
-
-  background:
-    rgba(7,28,39,.95);
-
-  border:1px solid #4c8999;
-
-  box-shadow:
-    0 30px 100px rgba(0,0,0,.5),
-    0 0 35px rgba(77,246,255,.12);
-
-  backdrop-filter:blur(15px);
-}
-
-#panel{
-  width:min(570px,calc(100% - 40px));
-
-  padding:38px;
-}
-
-.hidden{
-  display:none !important;
-}
-
-#closePanel,
-#closeMenu{
-  position:absolute;
-
-  right:17px;
-  top:14px;
-
-  border:0;
-
-  background:none;
-
-  color:#b4cbd3;
-
-  font-size:27px;
-
-  cursor:pointer;
-}
-
-#panelTag{
-  font-size:9px;
-
-  letter-spacing:3px;
-
-  color:#4df6ff;
-
-  font-weight:700;
-}
-
-#panelTitle{
-  margin:12px 0 18px;
-
-  font-size:38px;
-
-  line-height:1;
-
-  letter-spacing:-2px;
-}
-
-#panelBody{
-  color:#c5d8de;
-
-  font-size:13px;
-
-  line-height:1.75;
-}
-
-#panelLink{
-  display:inline-block;
-
-  margin-top:23px;
-
-  color:#4df6ff;
-
-  border-bottom:1px solid #4df6ff;
-
-  text-decoration:none;
-
-  font-size:10px;
-
-  letter-spacing:2px;
-
-  font-weight:700;
-}
-
-/* MENU */
-
-#menu{
-  width:min(470px,calc(100% - 40px));
-
-  padding:38px 32px;
-}
-
-.menu-title{
-  font-size:10px;
-
-  letter-spacing:3px;
-
-  color:#4df6ff;
-
-  margin-bottom:22px;
-}
-
-.menu-item{
-  border-top:1px solid #31505d;
-
-  padding:18px 2px;
-
-  color:#86a1aa;
-
-  font-size:10px;
-
-  letter-spacing:2px;
-
-  cursor:pointer;
-
-  transition:.2s;
-}
-
-.menu-item:last-of-type{
-  border-bottom:1px solid #31505d;
-}
-
-.menu-item span{
-  color:white;
-
-  margin-left:22px;
-
-  font-weight:700;
-}
-
-.menu-item:hover{
-  padding-left:8px;
-
-  color:#4df6ff;
-}
-
-.menu-footer{
-  font-size:9px;
-
-  color:#8ba2aa;
-
-  margin-top:22px;
-
-  line-height:1.6;
-}
-
-/* MOBILE */
-
-#mobileControls{
-  display:none;
-
-  position:absolute;
-
-  z-index:10;
-
-  left:20px;
-  bottom:60px;
-}
-
-#mobileControls button{
-  width:46px;
-  height:42px;
-
-  margin:2px;
-
-  background:
-    rgba(8,34,46,.72);
-
-  border:1px solid #4b7b8a;
-
-  color:white;
-
-  border-radius:5px;
-
-  touch-action:none;
-}
-
-#mobileControls>button{
-  display:block;
-
-  margin-left:52px;
-}
-
-@media(max-width:700px){
-
-  .topbar{
-    height:60px;
-    padding:0 18px;
+createWheel(-1.25, -1.35);
+createWheel(1.25, -1.35);
+createWheel(-1.25, 1.35);
+createWheel(1.25, 1.35);
+
+car.position.set(0, 0, 10);
+
+scene.add(car);
+
+
+// ==========================================
+// PORTFOLIO STATIONS
+// ==========================================
+
+const stations = [];
+
+const stationData = [
+
+  {
+    title: "ABOUT ME",
+    tag: "PROFILE",
+    body:
+      "Welcome to my interactive digital portfolio. Explore my background, experience and creative journey.",
+    position: [-8, 1.5, -12]
+  },
+
+  {
+    title: "PROJECTS",
+    tag: "WORK",
+    body:
+      "A collection of my digital marketing, UX, interactive media and creative technology projects.",
+    position: [8, 1.5, -12]
+  },
+
+  {
+    title: "DIGITAL SKILLS",
+    tag: "SKILLS",
+    body:
+      "Digital marketing, UX/UI, 3D, Unreal Engine, Blender, web development and interactive design.",
+    position: [-8, 1.5, 12]
+  },
+
+  {
+    title: "EDUCATION",
+    tag: "EDUCATION",
+    body:
+      "My academic journey, qualifications and current studies in Digital Marketing.",
+    position: [8, 1.5, 12]
+  },
+
+  {
+    title: "LINKEDIN",
+    tag: "CONNECT",
+    body:
+      "Connect with me and view my professional profile on LinkedIn.",
+    position: [0, 1.5, -28],
+    link: "https://www.linkedin.com/"
   }
 
-  .module{
-    display:none;
-  }
+];
 
-  .intro{
-    top:83px;
-    left:18px;
-  }
 
-  .intro h1{
-    font-size:39px;
-    letter-spacing:-2px;
-  }
+function createStation(data) {
 
-  .intro p{
-    font-size:10px;
-  }
+  const group = new THREE.Group();
 
-  #hud{
-    left:18px;
-    right:18px;
-    bottom:15px;
-  }
+  // platform
 
-  .hud-right{
-    display:none;
-  }
+  const platform = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      2,
+      2,
+      0.25,
+      32
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x163d4b,
+      emissive: 0x06242e
+    })
+  );
 
-  #mobileControls{
-    display:block;
-  }
+  platform.position.y = 0.15;
+
+  group.add(platform);
+
+
+  // glowing pillar
+
+  const pillar = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      1.4,
+      3,
+      0.35
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x4df6ff,
+      emissive: 0x0b7884,
+      emissiveIntensity: 1
+    })
+  );
+
+  pillar.position.y = 1.7;
+
+  group.add(pillar);
+
+
+  // light
+
+  const light = new THREE.PointLight(
+    0x4df6ff,
+    2,
+    12
+  );
+
+  light.position.y = 3;
+
+  group.add(light);
+
+
+  group.position.set(
+    data.position[0],
+    0,
+    data.position[2]
+  );
+
+  group.userData = data;
+
+  scene.add(group);
+
+  stations.push(group);
 }
+
+stationData.forEach(createStation);
+
+
+// ==========================================
+// MOVEMENT
+// ==========================================
+
+const keys = {};
+
+window.addEventListener(
+  "keydown",
+  function (event) {
+
+    keys[event.key.toLowerCase()] = true;
+
+  }
+);
+
+window.addEventListener(
+  "keyup",
+  function (event) {
+
+    keys[event.key.toLowerCase()] = false;
+
+  }
+);
+
+
+// ==========================================
+// MOBILE CONTROLS
+// ==========================================
+
+document
+  .querySelectorAll("#mobileControls button")
+  .forEach(button => {
+
+    const key = button.dataset.key;
+
+    button.addEventListener(
+      "pointerdown",
+      function () {
+        keys[key] = true;
+      }
+    );
+
+    button.addEventListener(
+      "pointerup",
+      function () {
+        keys[key] = false;
+      }
+    );
+
+    button.addEventListener(
+      "pointerleave",
+      function () {
+        keys[key] = false;
+      }
+    );
+
+  });
+
+
+// ==========================================
+// CAMERA
+// ==========================================
+
+let cameraDistance = 11;
+
+window.addEventListener(
+  "wheel",
+  function (event) {
+
+    cameraDistance += event.deltaY * 0.01;
+
+    cameraDistance = THREE.MathUtils.clamp(
+      cameraDistance,
+      5,
+      25
+    );
+
+  },
+  { passive: true }
+);
+
+
+// ==========================================
+// PANEL
+// ==========================================
+
+const panel = document.getElementById("panel");
+const panelTitle = document.getElementById("panelTitle");
+const panelTag = document.getElementById("panelTag");
+const panelBody = document.getElementById("panelBody");
+const panelLink = document.getElementById("panelLink");
+
+function openPanel(data) {
+
+  panelTitle.textContent = data.title;
+  panelTag.textContent = data.tag;
+  panelBody.textContent = data.body;
+
+  if (data.link) {
+
+    panelLink.href = data.link;
+    panelLink.style.display = "inline-block";
+    panelLink.textContent = "OPEN LINK →";
+
+  } else {
+
+    panelLink.style.display = "none";
+
+  }
+
+  panel.classList.remove("hidden");
+}
+
+document
+  .getElementById("closePanel")
+  ?.addEventListener(
+    "click",
+    function () {
+
+      panel.classList.add("hidden");
+
+    }
+  );
+
+
+// ==========================================
+// CLICK DETECTION
+// ==========================================
+
+const raycaster = new THREE.Raycaster();
+
+const mouse = new THREE.Vector2();
+
+window.addEventListener(
+  "pointerdown",
+  function (event) {
+
+    if (event.target.closest("#panel")) return;
+    if (event.target.closest("#menu")) return;
+    if (event.target.closest("#menuBtn")) return;
+
+    mouse.x =
+      (event.clientX / window.innerWidth) * 2 - 1;
+
+    mouse.y =
+      -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(
+      mouse,
+      camera
+    );
+
+    const objects = [];
+
+    stations.forEach(station => {
+
+      station.traverse(
+        object => {
+
+          if (object.isMesh) {
+            objects.push(object);
+          }
+
+        }
+      );
+
+    });
+
+    const hits =
+      raycaster.intersectObjects(
+        objects,
+        false
+      );
+
+    if (hits.length > 0) {
+
+      let object = hits[0].object;
+
+      while (
+        object.parent &&
+        !object.userData.title
+      ) {
+        object = object.parent;
+      }
+
+      if (object.userData.title) {
+        openPanel(object.userData);
+      }
+    }
+
+  }
+);
+
+
+// ==========================================
+// MENU
+// ==========================================
+
+const menu =
+  document.getElementById("menu");
+
+document
+  .getElementById("menuBtn")
+  ?.addEventListener(
+    "click",
+    function () {
+
+      menu.classList.remove("hidden");
+
+    }
+  );
+
+document
+  .getElementById("closeMenu")
+  ?.addEventListener(
+    "click",
+    function () {
+
+      menu.classList.add("hidden");
+
+    }
+  );
+
+document
+  .querySelectorAll(".menu-item")
+  .forEach(item => {
+
+    item.addEventListener(
+      "click",
+      function () {
+
+        const index =
+          Number(item.dataset.index);
+
+        const data =
+          stationData[index];
+
+        if (!data) return;
+
+        car.position.set(
+          data.position[0],
+          0,
+          data.position[2] + 7
+        );
+
+        menu.classList.add("hidden");
+
+      }
+    );
+
+  });
+
+
+// ==========================================
+// ANIMATION
+// ==========================================
+
+let speed = 0;
+
+const clock = new THREE.Clock();
+
+function animate() {
+
+  requestAnimationFrame(animate);
+
+  const delta =
+    Math.min(clock.getDelta(), 0.05);
+
+
+  // acceleration
+
+  const moving =
+    keys["w"] ||
+    keys["arrowup"] ||
+    keys["s"] ||
+    keys["arrowdown"];
+
+
+  if (moving) {
+
+    speed += 18 * delta;
+
+  } else {
+
+    speed *= 0.92;
+
+  }
+
+  speed = THREE.MathUtils.clamp(
+    speed,
+    0,
+    28
+  );
+
+
+  // forward/backward
+
+  if (
+    keys["w"] ||
+    keys["arrowup"]
+  ) {
+
+    car.translateZ(
+      -speed * delta
+    );
+
+  }
+
+  if (
+    keys["s"] ||
+    keys["arrowdown"]
+  ) {
+
+    car.translateZ(
+      speed * delta
+    );
+
+  }
+
+
+  // steering
+
+  const steering =
+    1.8 * delta;
+
+  if (
+    keys["a"] ||
+    keys["arrowleft"]
+  ) {
+
+    car.rotation.y += steering;
+
+  }
+
+  if (
+    keys["d"] ||
+    keys["arrowright"]
+  ) {
+
+    car.rotation.y -= steering;
+
+  }
+
+
+  // ========================================
+  // CAMERA FOLLOW
+  // ========================================
+
+  const forward =
+    new THREE.Vector3(
+      0,
+      0,
+      1
+    );
+
+  forward.applyQuaternion(
+    car.quaternion
+  );
+
+  const cameraTarget =
+    car.position.clone();
+
+  cameraTarget.y += 1.3;
+
+  const desiredCamera =
+    car.position.clone()
+      .add(
+        forward.multiplyScalar(
+          cameraDistance
+        )
+      );
+
+  desiredCamera.y += 7;
+
+  camera.position.lerp(
+    desiredCamera,
+    0.08
+  );
+
+  camera.lookAt(cameraTarget);
+
+
+  // ========================================
+  // SPEED HUD
+  // ========================================
+
+  const speedValue =
+    document.getElementById(
+      "speedValue"
+    );
+
+  if (speedValue) {
+
+    speedValue.textContent =
+      Math.round(speed * 4) +
+      " KM/H";
+
+  }
+
+
+  renderer.render(
+    scene,
+    camera
+  );
+}
+
+animate();
+
+
+// ==========================================
+// RESIZE
+// ==========================================
+
+window.addEventListener(
+  "resize",
+  function () {
+
+    camera.aspect =
+      window.innerWidth /
+      window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
+  }
+);
+
+
+// ==========================================
+// REMOVE LOADING SCREEN
+// ==========================================
+
+function hideLoading() {
+
+  const loading =
+    document.getElementById("loading");
+
+  if (loading) {
+    loading.classList.add("hide");
+  }
+
+}
+
+// Hide when ready
+setTimeout(hideLoading, 1500);
