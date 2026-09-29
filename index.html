@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rajini Kumar — Digital Marketing Portfolio</title>
+  <meta name="description" content="Interactive digital marketing portfolio of Rajini Kumar." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="loading">
+    <div class="loader-ring"></div>
+    <div class="loading-title">RAJINI<span>.</span></div>
+    <div class="loading-sub">DIGITAL MARKETING PORTFOLIO</div>
+  </div>
+
+  <div id="game">
+    <div class="topbar">
+      <div class="brand">RAJINI<span>.</span></div>
+      <div class="module">BA (HONS) DIGITAL MARKETING</div>
+      <button id="menuBtn">MENU</button>
+    </div>
+
+    <div class="intro">
+      <div class="eyebrow">INTERACTIVE PORTFOLIO</div>
+      <h1>Drive around.<br><strong>Discover my work.</strong></h1>
+      <p>Use <b>W A S D</b> or the arrow keys to explore.</p>
+      <div class="hint">Click a station to open it</div>
+    </div>
+
+    <div id="hud">
+      <div class="hud-left">EXPLORE MODE <span>●</span></div>
+      <div class="hud-right">SPEED <span id="speedValue">000</span> &nbsp;•&nbsp; WASD / ARROWS &nbsp;•&nbsp; CLICK OBJECTS</div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div id="mobileControls">
+      <button data-key="w">▲</button>
+      <div>
+        <button data-key="a">◀</button>
+        <button data-key="s">▼</button>
+        <button data-key="d">▶</button>
+      </div>
+    </div>
+
+    <div id="panel" class="hidden">
+      <button id="closePanel">×</button>
+      <div id="panelTag"></div>
+      <h2 id="panelTitle"></h2>
+      <div id="panelBody"></div>
+      <a id="panelLink" target="_blank" rel="noopener"></a>
+    </div>
+
+    <div id="menu" class="hidden">
+      <button id="closeMenu">×</button>
+      <div class="menu-title">PORTFOLIO MAP</div>
+      <div class="menu-item" data-target="about">01 <span>ABOUT ME</span></div>
+      <div class="menu-item" data-target="projects">02 <span>PROJECTS</span></div>
+      <div class="menu-item" data-target="skills">03 <span>SKILLS</span></div>
+      <div class="menu-item" data-target="education">04 <span>EDUCATION</span></div>
+      <div class="menu-item" data-target="linkedin">05 <span>LINKEDIN</span></div>
+      <div class="menu-footer">Built as an interactive digital experience.</div>
+    </div>
+
+    <div class="legend">
+      <span class="dot cyan"></span> INTERACTIVE
+      <span class="dot yellow"></span> PROJECT
+      <span class="dot pink"></span> PROFILE
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
