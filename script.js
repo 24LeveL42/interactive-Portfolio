@@ -32,6 +32,11 @@ renderer.setSize(
 
 renderer.shadowMap.enabled = true;
 
+// IMPORTANT FOR PEN / TABLET
+renderer.domElement.style.touchAction = "none";
+renderer.domElement.style.userSelect = "none";
+renderer.domElement.style.webkitUserSelect = "none";
+
 document
   .getElementById("game")
   .appendChild(renderer.domElement);
@@ -96,11 +101,7 @@ function createRoad(x, z, width, depth) {
     })
   );
 
-  road.position.set(
-    x,
-    0.08,
-    z
-  );
+  road.position.set(x, 0.08, z);
 
   scene.add(road);
 }
@@ -127,11 +128,7 @@ function createLightPole(x, z) {
     })
   );
 
-  pole.position.set(
-    x,
-    2.5,
-    z
-  );
+  pole.position.set(x, 2.5, z);
 
   scene.add(pole);
 
@@ -146,11 +143,7 @@ function createLightPole(x, z) {
     })
   );
 
-  lamp.position.set(
-    x,
-    5.1,
-    z
-  );
+  lamp.position.set(x, 5.1, z);
 
   scene.add(lamp);
 
@@ -160,21 +153,16 @@ function createLightPole(x, z) {
     18
   );
 
-  light.position.copy(
-    lamp.position
-  );
+  light.position.copy(lamp.position);
 
   scene.add(light);
 }
 
-for (
-  let x = -60;
-  x <= 60;
-  x += 20
-) {
+for (let x = -60; x <= 60; x += 20) {
 
   createLightPole(11, x);
   createLightPole(-11, x);
+
 }
 
 
@@ -196,11 +184,7 @@ function createTree(x, z) {
     })
   );
 
-  trunk.position.set(
-    x,
-    1.25,
-    z
-  );
+  trunk.position.set(x, 1.25, z);
 
   scene.add(trunk);
 
@@ -215,28 +199,21 @@ function createTree(x, z) {
     })
   );
 
-  leaves.position.set(
-    x,
-    3.2,
-    z
-  );
+  leaves.position.set(x, 3.2, z);
 
   scene.add(leaves);
 }
 
-for (
-  let i = -70;
-  i <= 70;
-  i += 14
-) {
+for (let i = -70; i <= 70; i += 14) {
 
   createTree(-15, i);
   createTree(15, i);
+
 }
 
 
 // =====================================================
-// CBD GLB
+// CBD MODEL
 // =====================================================
 
 const loader = new GLTFLoader();
@@ -254,8 +231,7 @@ loader.load(
     const city = gltf.scene;
 
     const box =
-      new THREE.Box3()
-        .setFromObject(city);
+      new THREE.Box3().setFromObject(city);
 
     const size =
       box.getSize(
@@ -277,13 +253,12 @@ loader.load(
         size.z
       );
 
-    const targetSize = 100;
-
     if (maxSize > 0) {
 
       city.scale.setScalar(
-        targetSize / maxSize
+        100 / maxSize
       );
+
     }
 
     city.position.y = 0;
@@ -304,32 +279,17 @@ loader.load(
     scene.add(city);
 
     console.log(
-      "CBD area loaded."
+      "CBD area loaded successfully."
     );
 
   },
 
-  function (progress) {
-
-    if (progress.total) {
-
-      console.log(
-        "CBD loading:",
-        (
-          progress.loaded /
-          progress.total *
-          100
-        ).toFixed(0) + "%"
-      );
-
-    }
-
-  },
+  undefined,
 
   function (error) {
 
     console.error(
-      "CBD loading failed:",
+      "CBD GLB failed:",
       error
     );
 
@@ -362,8 +322,6 @@ body.castShadow = true;
 car.add(body);
 
 
-// CAR ROOF
-
 const roof = new THREE.Mesh(
   new THREE.BoxGeometry(
     1.7,
@@ -385,8 +343,6 @@ roof.position.set(
 
 car.add(roof);
 
-
-// CAR WHEELS
 
 function createWheel(x, z) {
 
@@ -597,22 +553,32 @@ document
 
     button.addEventListener(
       "pointerdown",
-      () => {
+      function (event) {
+
+        event.preventDefault();
+
         keys[key] = true;
+
       }
     );
 
     button.addEventListener(
       "pointerup",
-      () => {
+      function (event) {
+
+        event.preventDefault();
+
         keys[key] = false;
+
       }
     );
 
     button.addEventListener(
-      "pointerleave",
-      () => {
+      "pointercancel",
+      function () {
+
         keys[key] = false;
+
       }
     );
 
@@ -620,7 +586,7 @@ document
 
 
 // =====================================================
-// CAMERA + MOUSE
+// PEN / TABLET CAMERA CONTROL
 // =====================================================
 
 let cameraDistance = 11;
@@ -629,60 +595,85 @@ let cameraAngle = 0;
 
 let cameraHeight = 6;
 
-let mouseDown = false;
+let pointerDown = false;
 
-let lastMouseX = 0;
+let lastX = 0;
 
-let lastMouseY = 0;
+let lastY = 0;
+
+let dragDistance = 0;
 
 
-// MOUSE DOWN
+// POINTER DOWN
+// Works with mouse + pen + touch
 
 renderer.domElement.addEventListener(
   "pointerdown",
   function (event) {
 
-    if (event.button !== 0)
+    // Ignore right mouse button
+    if (
+      event.pointerType === "mouse" &&
+      event.button !== 0
+    ) {
       return;
+    }
 
-    mouseDown = true;
+    event.preventDefault();
 
-    lastMouseX =
-      event.clientX;
+    pointerDown = true;
 
-    lastMouseY =
-      event.clientY;
+    dragDistance = 0;
 
-    renderer.domElement.setPointerCapture(
-      event.pointerId
-    );
+    lastX = event.clientX;
+    lastY = event.clientY;
 
-  }
+    try {
+
+      renderer.domElement.setPointerCapture(
+        event.pointerId
+      );
+
+    } catch (error) {}
+
+  },
+  { passive: false }
 );
 
 
-// MOUSE MOVE
+// POINTER MOVE
 
 renderer.domElement.addEventListener(
   "pointermove",
   function (event) {
 
-    if (!mouseDown)
+    if (!pointerDown)
       return;
 
-    const movementX =
-      event.clientX -
-      lastMouseX;
+    event.preventDefault();
 
-    const movementY =
-      event.clientY -
-      lastMouseY;
+    const dx =
+      event.clientX - lastX;
+
+    const dy =
+      event.clientY - lastY;
+
+    dragDistance +=
+      Math.abs(dx) +
+      Math.abs(dy);
+
+
+    // Horizontal rotation
 
     cameraAngle -=
-      movementX * 0.006;
+      dx * 0.008;
+
+
+    // Vertical camera movement
 
     cameraHeight -=
-      movementY * 0.03;
+      dy * 0.04;
+
 
     cameraHeight =
       THREE.MathUtils.clamp(
@@ -691,51 +682,76 @@ renderer.domElement.addEventListener(
         12
       );
 
-    lastMouseX =
+
+    lastX =
       event.clientX;
 
-    lastMouseY =
+    lastY =
       event.clientY;
 
-  }
+  },
+  { passive: false }
 );
 
 
-// MOUSE UP
+// POINTER UP
 
 renderer.domElement.addEventListener(
   "pointerup",
   function (event) {
 
-    mouseDown = false;
+    event.preventDefault();
 
-    renderer.domElement.releasePointerCapture(
-      event.pointerId
-    );
+    pointerDown = false;
 
-  }
+    try {
+
+      renderer.domElement.releasePointerCapture(
+        event.pointerId
+      );
+
+    } catch (error) {}
+
+  },
+  { passive: false }
 );
 
 
-// MOUSE LEAVE
+// POINTER CANCEL
 
 renderer.domElement.addEventListener(
   "pointercancel",
   function () {
 
-    mouseDown = false;
+    pointerDown = false;
 
   }
 );
 
 
 // =====================================================
-// MOUSE WHEEL ZOOM
+// PEN BARREL BUTTON / RIGHT CLICK
+// =====================================================
+
+renderer.domElement.addEventListener(
+  "contextmenu",
+  function (event) {
+
+    event.preventDefault();
+
+  }
+);
+
+
+// =====================================================
+// ZOOM
 // =====================================================
 
 renderer.domElement.addEventListener(
   "wheel",
   function (event) {
+
+    event.preventDefault();
 
     cameraDistance +=
       event.deltaY * 0.01;
@@ -749,7 +765,7 @@ renderer.domElement.addEventListener(
 
   },
   {
-    passive: true
+    passive: false
   }
 );
 
@@ -821,10 +837,12 @@ function openPanel(data) {
 
   }
 
+
   if (panel)
     panel.classList.remove(
       "hidden"
     );
+
 }
 
 
@@ -847,7 +865,7 @@ document
 
 
 // =====================================================
-// STATION CLICK
+// STATION SELECTION
 // =====================================================
 
 const raycaster =
@@ -860,6 +878,13 @@ const mouse =
 window.addEventListener(
   "click",
   function (event) {
+
+    // Don't open a station
+    // when user was dragging camera
+
+    if (dragDistance > 8)
+      return;
+
 
     if (
       event.target.closest(
@@ -904,6 +929,7 @@ window.addEventListener(
 
     const objects = [];
 
+
     stations.forEach(
       station => {
 
@@ -934,7 +960,7 @@ window.addEventListener(
       );
 
 
-    if (hits.length === 0)
+    if (!hits.length)
       return;
 
 
@@ -1102,7 +1128,7 @@ function animate() {
     );
 
 
-  // DRIVE FORWARD
+  // FORWARD
 
   if (
     keys["w"] ||
@@ -1116,7 +1142,7 @@ function animate() {
   }
 
 
-  // DRIVE BACKWARD
+  // BACKWARD
 
   if (
     keys["s"] ||
@@ -1159,7 +1185,7 @@ function animate() {
 
 
   // ===================================================
-  // CAMERA FOLLOW
+  // CAMERA
   // ===================================================
 
   const cameraOffset =
@@ -1200,7 +1226,7 @@ function animate() {
 
 
   // ===================================================
-  // SPEED HUD
+  // SPEED DISPLAY
   // ===================================================
 
   const speedValue =
@@ -1220,8 +1246,6 @@ function animate() {
   }
 
 
-  // RENDER
-
   renderer.render(
     scene,
     camera
@@ -1234,7 +1258,7 @@ animate();
 
 
 // =====================================================
-// WINDOW RESIZE
+// RESIZE
 // =====================================================
 
 window.addEventListener(
