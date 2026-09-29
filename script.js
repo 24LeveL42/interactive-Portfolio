@@ -8,37 +8,63 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const scene = new THREE.Scene();
 
 scene.background = new THREE.Color(0x102a38);
-scene.fog = new THREE.Fog(0x102a38, 45, 180);
 
-const camera = new THREE.PerspectiveCamera(
+scene.fog = new THREE.Fog(
+  0x102a38,
   60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  500
+  300
 );
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
+
+const camera =
+  new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth /
+      window.innerHeight,
+    0.1,
+    1000
+  );
+
+
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias: true
+  });
+
 
 renderer.setPixelRatio(
-  Math.min(window.devicePixelRatio, 2)
+  Math.min(
+    window.devicePixelRatio,
+    2
+  )
 );
+
 
 renderer.setSize(
   window.innerWidth,
   window.innerHeight
 );
 
-renderer.shadowMap.enabled = true;
 
-renderer.domElement.style.touchAction = "none";
-renderer.domElement.style.userSelect = "none";
-renderer.domElement.style.webkitUserSelect = "none";
+renderer.shadowMap.enabled =
+  true;
+
+
+renderer.domElement.style.touchAction =
+  "none";
+
+renderer.domElement.style.userSelect =
+  "none";
+
+renderer.domElement.style.webkitUserSelect =
+  "none";
+
 
 document
   .getElementById("game")
-  .appendChild(renderer.domElement);
+  .appendChild(
+    renderer.domElement
+  );
 
 
 // =====================================================
@@ -53,13 +79,23 @@ scene.add(
   )
 );
 
-const sun = new THREE.DirectionalLight(
-  0xffffff,
-  3
+
+const sun =
+  new THREE.DirectionalLight(
+    0xffffff,
+    3
+  );
+
+
+sun.position.set(
+  30,
+  60,
+  20
 );
 
-sun.position.set(30, 60, 20);
+
 sun.castShadow = true;
+
 
 scene.add(sun);
 
@@ -68,16 +104,26 @@ scene.add(sun);
 // GROUND
 // =====================================================
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(300, 300),
-  new THREE.MeshStandardMaterial({
-    color: 0x18313b,
-    roughness: 0.8
-  })
-);
+const ground =
+  new THREE.Mesh(
+    new THREE.PlaneGeometry(
+      500,
+      500
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x18313b,
+      roughness: 0.8
+    })
+  );
 
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
+
+ground.rotation.x =
+  -Math.PI / 2;
+
+
+ground.receiveShadow =
+  true;
+
 
 scene.add(ground);
 
@@ -86,19 +132,26 @@ scene.add(ground);
 // ROADS
 // =====================================================
 
-function createRoad(x, z, width, depth) {
+function createRoad(
+  x,
+  z,
+  width,
+  depth
+) {
 
-  const road = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      width,
-      0.15,
-      depth
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x242d33,
-      roughness: 0.9
-    })
-  );
+  const road =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        width,
+        0.15,
+        depth
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x242d33,
+        roughness: 0.9
+      })
+    );
+
 
   road.position.set(
     x,
@@ -106,30 +159,49 @@ function createRoad(x, z, width, depth) {
     z
   );
 
+
   scene.add(road);
 }
 
-createRoad(0, 0, 18, 300);
-createRoad(0, 0, 300, 18);
+
+createRoad(
+  0,
+  0,
+  18,
+  500
+);
+
+
+createRoad(
+  0,
+  0,
+  500,
+  18
+);
 
 
 // =====================================================
-// ROAD LIGHTS
+// LIGHT POLES
 // =====================================================
 
-function createLightPole(x, z) {
+function createLightPole(
+  x,
+  z
+) {
 
-  const pole = new THREE.Mesh(
-    new THREE.CylinderGeometry(
-      0.08,
-      0.12,
-      5,
-      8
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x657d86
-    })
-  );
+  const pole =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        0.08,
+        0.12,
+        5,
+        8
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x657d86
+      })
+    );
+
 
   pole.position.set(
     x,
@@ -137,18 +209,22 @@ function createLightPole(x, z) {
     z
   );
 
+
   scene.add(pole);
 
-  const lamp = new THREE.Mesh(
-    new THREE.SphereGeometry(
-      0.22,
-      12,
-      12
-    ),
-    new THREE.MeshBasicMaterial({
-      color: 0x4df6ff
-    })
-  );
+
+  const lamp =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        0.22,
+        12,
+        12
+      ),
+      new THREE.MeshBasicMaterial({
+        color: 0x4df6ff
+      })
+    );
+
 
   lamp.position.set(
     x,
@@ -156,29 +232,42 @@ function createLightPole(x, z) {
     z
   );
 
+
   scene.add(lamp);
 
-  const light = new THREE.PointLight(
-    0x4df6ff,
-    3,
-    18
-  );
+
+  const light =
+    new THREE.PointLight(
+      0x4df6ff,
+      3,
+      18
+    );
+
 
   light.position.copy(
     lamp.position
   );
 
+
   scene.add(light);
 }
 
+
 for (
-  let x = -60;
-  x <= 60;
+  let x = -120;
+  x <= 120;
   x += 20
 ) {
 
-  createLightPole(11, x);
-  createLightPole(-11, x);
+  createLightPole(
+    11,
+    x
+  );
+
+  createLightPole(
+    -11,
+    x
+  );
 }
 
 
@@ -186,19 +275,24 @@ for (
 // TREES
 // =====================================================
 
-function createTree(x, z) {
+function createTree(
+  x,
+  z
+) {
 
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(
-      0.25,
-      0.35,
-      2.5,
-      8
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x5b4030
-    })
-  );
+  const trunk =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        0.25,
+        0.35,
+        2.5,
+        8
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x5b4030
+      })
+    );
+
 
   trunk.position.set(
     x,
@@ -206,18 +300,22 @@ function createTree(x, z) {
     z
   );
 
+
   scene.add(trunk);
 
-  const leaves = new THREE.Mesh(
-    new THREE.SphereGeometry(
-      1.5,
-      12,
-      12
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x20745d
-    })
-  );
+
+  const leaves =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        1.5,
+        12,
+        12
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x20745d
+      })
+    );
+
 
   leaves.position.set(
     x,
@@ -225,53 +323,79 @@ function createTree(x, z) {
     z
   );
 
+
   scene.add(leaves);
 }
 
+
 for (
-  let i = -70;
-  i <= 70;
+  let i = -140;
+  i <= 140;
   i += 14
 ) {
 
-  createTree(-15, i);
-  createTree(15, i);
+  createTree(
+    -15,
+    i
+  );
+
+  createTree(
+    15,
+    i
+  );
 }
 
 
 // =====================================================
-// CBD MODEL
+// CBD GLB
 // =====================================================
 
-const loader = new GLTFLoader();
+const loader =
+  new GLTFLoader();
 
-const modelURL = new URL(
-  "./CBD area.glb",
-  import.meta.url
-).href;
+
+const modelURL =
+  new URL(
+    "./CBD area.glb",
+    import.meta.url
+  ).href;
+
 
 loader.load(
   modelURL,
 
   function (gltf) {
 
-    const city = gltf.scene;
+    const city =
+      gltf.scene;
+
 
     const box =
-      new THREE.Box3().setFromObject(city);
+      new THREE.Box3()
+        .setFromObject(
+          city
+        );
+
 
     const size =
       box.getSize(
         new THREE.Vector3()
       );
 
+
     const center =
       box.getCenter(
         new THREE.Vector3()
       );
 
-    city.position.x -= center.x;
-    city.position.z -= center.z;
+
+    city.position.x -=
+      center.x;
+
+
+    city.position.z -=
+      center.z;
+
 
     const maxSize =
       Math.max(
@@ -279,6 +403,7 @@ loader.load(
         size.y,
         size.z
       );
+
 
     if (maxSize > 0) {
 
@@ -288,32 +413,42 @@ loader.load(
 
     }
 
-    city.position.y = 0;
+
+    city.position.y =
+      0;
+
 
     city.traverse(
-      function (object) {
+      function(object) {
 
-        if (object.isMesh) {
+        if (
+          object.isMesh
+        ) {
 
-          object.castShadow = false;
-          object.receiveShadow = true;
+          object.castShadow =
+            false;
+
+          object.receiveShadow =
+            true;
 
         }
 
       }
     );
 
+
     scene.add(city);
 
+
     console.log(
-      "CBD area loaded successfully."
+      "CBD area loaded."
     );
 
   },
 
   undefined,
 
-  function (error) {
+  function(error) {
 
     console.error(
       "CBD GLB failed:",
@@ -328,39 +463,54 @@ loader.load(
 // CAR
 // =====================================================
 
-const car = new THREE.Group();
+const car =
+  new THREE.Group();
 
-const body = new THREE.Mesh(
-  new THREE.BoxGeometry(
-    2.4,
-    0.65,
-    4.2
-  ),
-  new THREE.MeshStandardMaterial({
-    color: 0x16d9ff,
-    metalness: 0.5,
-    roughness: 0.25
-  })
-);
 
-body.position.y = 0.75;
-body.castShadow = true;
+const body =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      2.4,
+      0.65,
+      4.2
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x16d9ff,
+      metalness: 0.5,
+      roughness: 0.25
+    })
+  );
+
+
+body.position.y =
+  0.75;
+
+
+body.castShadow =
+  true;
+
 
 car.add(body);
 
 
-const roof = new THREE.Mesh(
-  new THREE.BoxGeometry(
-    1.7,
-    0.55,
-    1.8
-  ),
-  new THREE.MeshStandardMaterial({
-    color: 0x142a35,
-    metalness: 0.4,
-    roughness: 0.2
-  })
-);
+// =====================================================
+// CAR ROOF
+// =====================================================
+
+const roof =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      1.7,
+      0.55,
+      1.8
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x142a35,
+      metalness: 0.4,
+      roughness: 0.2
+    })
+  );
+
 
 roof.position.set(
   0,
@@ -368,25 +518,36 @@ roof.position.set(
   -0.15
 );
 
+
 car.add(roof);
 
 
-function createWheel(x, z) {
+// =====================================================
+// WHEELS
+// =====================================================
 
-  const wheel = new THREE.Mesh(
-    new THREE.CylinderGeometry(
-      0.42,
-      0.42,
-      0.3,
-      16
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x111111
-    })
-  );
+function createWheel(
+  x,
+  z
+) {
+
+  const wheel =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        0.42,
+        0.42,
+        0.3,
+        16
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x111111
+      })
+    );
+
 
   wheel.rotation.z =
     Math.PI / 2;
+
 
   wheel.position.set(
     x,
@@ -394,19 +555,38 @@ function createWheel(x, z) {
     z
   );
 
+
   car.add(wheel);
 }
 
-createWheel(-1.25, -1.35);
-createWheel(1.25, -1.35);
-createWheel(-1.25, 1.35);
-createWheel(1.25, 1.35);
+
+createWheel(
+  -1.25,
+  -1.35
+);
+
+createWheel(
+  1.25,
+  -1.35
+);
+
+createWheel(
+  -1.25,
+  1.35
+);
+
+createWheel(
+  1.25,
+  1.35
+);
+
 
 car.position.set(
   0,
   0,
   10
 );
+
 
 scene.add(car);
 
@@ -415,73 +595,49 @@ scene.add(car);
 // CAMERA RIG
 // =====================================================
 
-// Camera is now attached to the car.
-//
-// This is the important part:
-//
-// car
-//  └── cameraRig
-//       └── camera
-//
-// So when the car moves,
-// the camera automatically moves with it.
-
 const cameraRig =
   new THREE.Group();
 
-car.add(cameraRig);
+
+car.add(
+  cameraRig
+);
 
 
-// Camera position relative to car
+cameraRig.add(
+  camera
+);
 
-cameraRig.position.set(
+
+camera.position.set(
   0,
   5.5,
   11
 );
 
 
-// Camera looks toward car
-
-cameraRig.add(camera);
-
-camera.position.set(
-  0,
-  0,
-  0
-);
-
-
 // =====================================================
-// CAMERA ROTATION
+// CAMERA SETTINGS
 // =====================================================
 
-let cameraYaw = 0;
-
-let cameraPitch = -0.25;
-
-
-// No 180-degree restriction.
-//
-// cameraYaw can keep increasing forever:
-//
-// 0
-// 360
-// 720
-// -360
-// etc.
-//
-// Three.js will automatically wrap the rotation.
+let cameraDistance =
+  11;
 
 
-// =====================================================
-// CAMERA ZOOM
-// =====================================================
+const MIN_ZOOM =
+  4;
 
-let cameraDistance = 11;
 
-const MIN_ZOOM = 5;
-const MAX_ZOOM = 30;
+const MAX_ZOOM =
+  150;
+
+
+let cameraYaw =
+  0;
+
+
+let cameraPitch =
+  -0.20;
 
 
 // =====================================================
@@ -490,23 +646,19 @@ const MAX_ZOOM = 30;
 
 function updateCamera() {
 
-  // Rotate camera rig around car
-
   cameraRig.rotation.y =
     cameraYaw;
+
 
   cameraRig.rotation.x =
     cameraPitch;
 
-
-  // Move camera behind / around car
 
   cameraRig.position.set(
     0,
     5.5,
     cameraDistance
   );
-
 }
 
 
@@ -516,6 +668,7 @@ function updateCamera() {
 
 const stations = [];
 
+
 const stationData = [
 
   {
@@ -523,7 +676,11 @@ const stationData = [
     tag: "PROFILE",
     body:
       "Welcome to my interactive digital portfolio. Explore my background, experience and creative journey.",
-    position: [-8, 1.5, -12]
+    position: [
+      -8,
+      1.5,
+      -12
+    ]
   },
 
   {
@@ -531,7 +688,11 @@ const stationData = [
     tag: "WORK",
     body:
       "A collection of my digital marketing, UX/UI, interactive media and creative technology projects.",
-    position: [8, 1.5, -12]
+    position: [
+      8,
+      1.5,
+      -12
+    ]
   },
 
   {
@@ -539,7 +700,11 @@ const stationData = [
     tag: "SKILLS",
     body:
       "Digital marketing, UX/UI, 3D, Unreal Engine, Blender, web development and interactive design.",
-    position: [-8, 1.5, 12]
+    position: [
+      -8,
+      1.5,
+      12
+    ]
   },
 
   {
@@ -547,7 +712,11 @@ const stationData = [
     tag: "EDUCATION",
     body:
       "My academic journey, qualifications and current studies in Digital Marketing.",
-    position: [8, 1.5, 12]
+    position: [
+      8,
+      1.5,
+      12
+    ]
   },
 
   {
@@ -555,17 +724,25 @@ const stationData = [
     tag: "CONNECT",
     body:
       "Connect with me and view my professional profile on LinkedIn.",
-    position: [0, 1.5, -28],
-    link: "https://www.linkedin.com/"
+    position: [
+      0,
+      1.5,
+      -28
+    ],
+    link:
+      "https://www.linkedin.com/"
   }
 
 ];
 
 
-function createStation(data) {
+function createStation(
+  data
+) {
 
   const group =
     new THREE.Group();
+
 
   const platform =
     new THREE.Mesh(
@@ -581,8 +758,10 @@ function createStation(data) {
       })
     );
 
+
   platform.position.y =
     0.15;
+
 
   group.add(platform);
 
@@ -601,8 +780,10 @@ function createStation(data) {
       })
     );
 
+
   pillar.position.y =
     1.7;
+
 
   group.add(pillar);
 
@@ -614,7 +795,10 @@ function createStation(data) {
       12
     );
 
-  light.position.y = 3;
+
+  light.position.y =
+    3;
+
 
   group.add(light);
 
@@ -625,13 +809,19 @@ function createStation(data) {
     data.position[2]
   );
 
+
   group.userData =
     data;
 
+
   scene.add(group);
 
-  stations.push(group);
+
+  stations.push(
+    group
+  );
 }
+
 
 stationData.forEach(
   createStation
@@ -644,9 +834,10 @@ stationData.forEach(
 
 const keys = {};
 
+
 window.addEventListener(
   "keydown",
-  function (event) {
+  function(event) {
 
     keys[
       event.key.toLowerCase()
@@ -655,9 +846,10 @@ window.addEventListener(
   }
 );
 
+
 window.addEventListener(
   "keyup",
-  function (event) {
+  function(event) {
 
     keys[
       event.key.toLowerCase()
@@ -668,90 +860,76 @@ window.addEventListener(
 
 
 // =====================================================
-// MOBILE CONTROLS
+// PEN DRIVING
 // =====================================================
 
-document
-  .querySelectorAll(
-    "#mobileControls button"
-  )
-  .forEach(button => {
+let penDown =
+  false;
 
-    const key =
-      button.dataset.key;
 
-    button.addEventListener(
-      "pointerdown",
-      function (event) {
+let penStartX =
+  0;
 
-        event.preventDefault();
 
-        keys[key] = true;
+let penStartY =
+  0;
 
-      }
-    );
 
-    button.addEventListener(
-      "pointerup",
-      function (event) {
+let penLastX =
+  0;
 
-        event.preventDefault();
 
-        keys[key] = false;
+let penLastY =
+  0;
 
-      }
-    );
 
-    button.addEventListener(
-      "pointercancel",
-      function () {
-
-        keys[key] = false;
-
-      }
-    );
-
-  });
+let penDistance =
+  0;
 
 
 // =====================================================
-// PEN / MOUSE CONTROL
-// =====================================================
-
-let pointerDown = false;
-
-let lastX = 0;
-
-let lastY = 0;
-
-let dragDistance = 0;
-
-
-// =====================================================
-// POINTER DOWN
+// PEN DOWN
 // =====================================================
 
 renderer.domElement.addEventListener(
   "pointerdown",
-  function (event) {
+  function(event) {
 
     if (
-      event.pointerType === "mouse" &&
+      event.pointerType ===
+      "mouse" &&
       event.button !== 0
     ) {
+
       return;
+
     }
+
 
     event.preventDefault();
 
-    pointerDown = true;
 
-    dragDistance = 0;
+    penDown =
+      true;
 
-    lastX =
+
+    penDistance =
+      0;
+
+
+    penStartX =
       event.clientX;
 
-    lastY =
+
+    penStartY =
+      event.clientY;
+
+
+    penLastX =
+      event.clientX;
+
+
+    penLastY =
       event.clientY;
 
 
@@ -761,7 +939,7 @@ renderer.domElement.addEventListener(
         event.pointerId
       );
 
-    } catch (error) {}
+    } catch(error) {}
 
   },
   {
@@ -771,60 +949,98 @@ renderer.domElement.addEventListener(
 
 
 // =====================================================
-// POINTER MOVE
+// PEN MOVEMENT = CAR CONTROL
 // =====================================================
 
 renderer.domElement.addEventListener(
   "pointermove",
-  function (event) {
+  function(event) {
 
-    if (!pointerDown)
+    if (!penDown)
       return;
+
 
     event.preventDefault();
 
+
     const dx =
       event.clientX -
-      lastX;
+      penLastX;
+
 
     const dy =
       event.clientY -
-      lastY;
+      penLastY;
 
 
-    dragDistance +=
+    penDistance +=
       Math.abs(dx) +
       Math.abs(dy);
 
 
     // ===============================================
-    // 360 DEGREE ROTATION
+    // HORIZONTAL PEN MOVEMENT
+    // = CAR STEERING
     // ===============================================
 
-    cameraYaw -=
-      dx * 0.008;
+    if (
+      Math.abs(dx) > 0.5
+    ) {
+
+      car.rotation.y -=
+        dx * 0.012;
+
+    }
 
 
     // ===============================================
-    // CAMERA PITCH
+    // VERTICAL PEN MOVEMENT
+    // = CAR SPEED
     // ===============================================
 
-    cameraPitch -=
-      dy * 0.005;
+    if (
+      Math.abs(dy) > 0.5
+    ) {
+
+      // Pen moving UP
+      // drives forward
+
+      if (dy < 0) {
+
+        speed +=
+          Math.abs(dy) *
+          0.10;
+
+      }
 
 
-    cameraPitch =
+      // Pen moving DOWN
+      // reverses
+
+      if (dy > 0) {
+
+        speed -=
+          Math.abs(dy) *
+          0.10;
+
+      }
+
+    }
+
+
+    speed =
       THREE.MathUtils.clamp(
-        cameraPitch,
-        -1.0,
-        0.35
+        speed,
+        -18,
+        40
       );
 
 
-    lastX =
+    penLastX =
       event.clientX;
 
-    lastY =
+
+    penLastY =
       event.clientY;
 
   },
@@ -835,16 +1051,19 @@ renderer.domElement.addEventListener(
 
 
 // =====================================================
-// POINTER UP
+// PEN UP
 // =====================================================
 
 renderer.domElement.addEventListener(
   "pointerup",
-  function (event) {
+  function(event) {
 
     event.preventDefault();
 
-    pointerDown = false;
+
+    penDown =
+      false;
+
 
     try {
 
@@ -852,7 +1071,8 @@ renderer.domElement.addEventListener(
         event.pointerId
       );
 
-    } catch (error) {}
+    } catch(error) {}
+
 
   },
   {
@@ -862,59 +1082,52 @@ renderer.domElement.addEventListener(
 
 
 // =====================================================
-// POINTER CANCEL
+// PEN CANCEL
 // =====================================================
 
 renderer.domElement.addEventListener(
   "pointercancel",
-  function () {
+  function() {
 
-    pointerDown = false;
-
-  }
-);
-
-
-// =====================================================
-// PREVENT RIGHT CLICK MENU
-// =====================================================
-
-renderer.domElement.addEventListener(
-  "contextmenu",
-  function (event) {
-
-    event.preventDefault();
+    penDown =
+      false;
 
   }
 );
 
 
 // =====================================================
-// ZOOM
+// MOUSE WHEEL / TABLET WHEEL ZOOM
 // =====================================================
-
-// Mouse wheel / tablet wheel.
-//
-// Normal wheel:
-// zoom.
-//
-// Ctrl + wheel:
-// also zoom, with stronger control.
 
 renderer.domElement.addEventListener(
   "wheel",
-  function (event) {
+  function(event) {
 
     event.preventDefault();
 
-    const multiplier =
+
+    let zoomAmount =
+      event.deltaY *
+      0.04;
+
+
+    // CTRL = more precise control
+
+    if (
       event.ctrlKey
-        ? 0.025
-        : 0.01;
+    ) {
+
+      zoomAmount =
+        event.deltaY *
+        0.015;
+
+    }
+
 
     cameraDistance +=
-      event.deltaY *
-      multiplier;
+      zoomAmount;
+
 
     cameraDistance =
       THREE.MathUtils.clamp(
@@ -931,6 +1144,14 @@ renderer.domElement.addEventListener(
 
 
 // =====================================================
+// STOP CAR WHEN PEN RELEASED
+// =====================================================
+
+let speed =
+  0;
+
+
+// =====================================================
 // PORTFOLIO PANEL
 // =====================================================
 
@@ -939,20 +1160,24 @@ const panel =
     "panel"
   );
 
+
 const panelTitle =
   document.getElementById(
     "panelTitle"
   );
+
 
 const panelTag =
   document.getElementById(
     "panelTag"
   );
 
+
 const panelBody =
   document.getElementById(
     "panelBody"
   );
+
 
 const panelLink =
   document.getElementById(
@@ -960,15 +1185,19 @@ const panelLink =
   );
 
 
-function openPanel(data) {
+function openPanel(
+  data
+) {
 
   if (panelTitle)
     panelTitle.textContent =
       data.title;
 
+
   if (panelTag)
     panelTag.textContent =
       data.tag;
+
 
   if (panelBody)
     panelBody.textContent =
@@ -998,11 +1227,13 @@ function openPanel(data) {
   }
 
 
-  if (panel)
+  if (panel) {
+
     panel.classList.remove(
       "hidden"
     );
 
+  }
 }
 
 
@@ -1016,7 +1247,7 @@ document
   )
   ?.addEventListener(
     "click",
-    function () {
+    function() {
 
       panel.classList.add(
         "hidden"
@@ -1033,19 +1264,24 @@ document
 const raycaster =
   new THREE.Raycaster();
 
+
 const mouse =
   new THREE.Vector2();
 
 
 window.addEventListener(
   "click",
-  function (event) {
+  function(event) {
 
-    // If pen was dragging,
-    // don't treat it as a click.
+    // Don't select if pen was dragged
 
-    if (dragDistance > 8)
+    if (
+      penDistance > 10
+    ) {
+
       return;
+
+    }
 
 
     if (
@@ -1055,12 +1291,14 @@ window.addEventListener(
     )
       return;
 
+
     if (
       event.target.closest(
         "#menu"
       )
     )
       return;
+
 
     if (
       event.target.closest(
@@ -1071,16 +1309,17 @@ window.addEventListener(
 
 
     mouse.x =
-      (event.clientX /
-        window.innerWidth) *
-        2 -
-      1;
+      (
+        event.clientX /
+        window.innerWidth
+      ) * 2 - 1;
+
 
     mouse.y =
-      -(event.clientY /
-        window.innerHeight) *
-        2 +
-      1;
+      -(
+        event.clientY /
+        window.innerHeight
+      ) * 2 + 1;
 
 
     raycaster.setFromCamera(
@@ -1171,7 +1410,7 @@ document
   )
   ?.addEventListener(
     "click",
-    function () {
+    function() {
 
       menu.classList.remove(
         "hidden"
@@ -1187,7 +1426,7 @@ document
   )
   ?.addEventListener(
     "click",
-    function () {
+    function() {
 
       menu.classList.add(
         "hidden"
@@ -1201,46 +1440,48 @@ document
   .querySelectorAll(
     ".menu-item"
   )
-  .forEach(item => {
+  .forEach(
+    item => {
 
-    item.addEventListener(
-      "click",
-      function () {
+      item.addEventListener(
+        "click",
+        function() {
 
-        const index =
-          Number(
-            item.dataset.index
+          const index =
+            Number(
+              item.dataset.index
+            );
+
+
+          const data =
+            stationData[index];
+
+
+          if (!data)
+            return;
+
+
+          car.position.set(
+            data.position[0],
+            0,
+            data.position[2] + 7
           );
 
-        const data =
-          stationData[index];
 
-        if (!data)
-          return;
+          menu.classList.add(
+            "hidden"
+          );
 
+        }
+      );
 
-        car.position.set(
-          data.position[0],
-          0,
-          data.position[2] + 7
-        );
-
-
-        menu.classList.add(
-          "hidden"
-        );
-
-      }
-    );
-
-  });
+    }
+  );
 
 
 // =====================================================
 // GAME LOOP
 // =====================================================
-
-let speed = 0;
 
 const clock =
   new THREE.Clock();
@@ -1261,39 +1502,7 @@ function animate() {
 
 
   // ===================================================
-  // ACCELERATION
-  // ===================================================
-
-  const moving =
-    keys["w"] ||
-    keys["arrowup"] ||
-    keys["s"] ||
-    keys["arrowdown"];
-
-
-  if (moving) {
-
-    speed +=
-      18 * delta;
-
-  } else {
-
-    speed *=
-      0.92;
-
-  }
-
-
-  speed =
-    THREE.MathUtils.clamp(
-      speed,
-      0,
-      28
-    );
-
-
-  // ===================================================
-  // DRIVE FORWARD
+  // KEYBOARD DRIVING
   // ===================================================
 
   if (
@@ -1301,36 +1510,26 @@ function animate() {
     keys["arrowup"]
   ) {
 
-    car.translateZ(
-      -speed * delta
-    );
+    speed +=
+      25 * delta;
 
   }
 
-
-  // ===================================================
-  // DRIVE BACKWARD
-  // ===================================================
 
   if (
     keys["s"] ||
     keys["arrowdown"]
   ) {
 
-    car.translateZ(
-      speed * delta
-    );
+    speed -=
+      25 * delta;
 
   }
 
 
   // ===================================================
-  // STEERING
+  // KEYBOARD STEERING
   // ===================================================
-
-  const steering =
-    1.8 * delta;
-
 
   if (
     keys["a"] ||
@@ -1338,7 +1537,7 @@ function animate() {
   ) {
 
     car.rotation.y +=
-      steering;
+      2.0 * delta;
 
   }
 
@@ -1349,9 +1548,46 @@ function animate() {
   ) {
 
     car.rotation.y -=
-      steering;
+      2.0 * delta;
 
   }
+
+
+  // ===================================================
+  // SPEED LIMIT
+  // ===================================================
+
+  speed =
+    THREE.MathUtils.clamp(
+      speed,
+      -18,
+      40
+    );
+
+
+  // ===================================================
+  // NATURAL FRICTION
+  // ===================================================
+
+  if (!penDown &&
+      !keys["w"] &&
+      !keys["arrowup"] &&
+      !keys["s"] &&
+      !keys["arrowdown"]) {
+
+    speed *=
+      0.94;
+
+  }
+
+
+  // ===================================================
+  // MOVE CAR
+  // ===================================================
+
+  car.translateZ(
+    -speed * delta
+  );
 
 
   // ===================================================
@@ -1362,7 +1598,7 @@ function animate() {
 
 
   // ===================================================
-  // SPEED DISPLAY
+  // SPEED HUD
   // ===================================================
 
   const speedValue =
@@ -1375,18 +1611,21 @@ function animate() {
 
     speedValue.textContent =
       Math.round(
-        speed * 4
+        Math.abs(speed) * 4
       ) +
       " KM/H";
 
   }
 
 
+  // ===================================================
+  // RENDER
+  // ===================================================
+
   renderer.render(
     scene,
     camera
   );
-
 }
 
 
@@ -1399,13 +1638,15 @@ animate();
 
 window.addEventListener(
   "resize",
-  function () {
+  function() {
 
     camera.aspect =
       window.innerWidth /
       window.innerHeight;
 
+
     camera.updateProjectionMatrix();
+
 
     renderer.setSize(
       window.innerWidth,
@@ -1427,6 +1668,7 @@ function hideLoading() {
       "loading"
     );
 
+
   if (loading) {
 
     loading.classList.add(
@@ -1434,8 +1676,8 @@ function hideLoading() {
     );
 
   }
-
 }
+
 
 setTimeout(
   hideLoading,
