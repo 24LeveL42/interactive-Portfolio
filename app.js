@@ -319,7 +319,7 @@ function buildScene() {
     doorL.position.y = closedDoorY + doorLift * doorProgress;
     doorR.position.y = closedDoorY + doorLift * doorProgress;
     sideDoorPanels.forEach(door => {
-      if (door.hinge) door.group.rotation.z = door.openAngle * doorProgress;
+      if (door.hinge) door.group.rotation.x = door.openAngle * doorProgress;
       else door.group.position.x = door.baseX + door.direction * door.travel * doorProgress;
     });
   };
