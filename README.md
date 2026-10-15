@@ -39,10 +39,10 @@ Use the close button on the portfolio journey panel to hide it and the floating 
 
 ## Supplied sky texture
 
-SKY HDR pp.hdr is used as the sky and reflection environment at every station stop. The built-in procedural sky remains available if the HDR cannot load.
+SKY HDR pp.hdr is used continuously as the exterior sky and reflection environment during travel and at every station. The built-in procedural skies remain available if the HDR cannot load.
 
 
 
-## Lamborghini trial
+## Monster truck
 
-The current trial uses the latest supplied `lambo.glb` in place of the MRT carriage while keeping the station route, destination picker, exterior journey, and station stops. The starting first-person view is placed at the right-hand-drive seat and stays fixed when the car stops. The GLB has no animation clips or separate door objects, so the app extracts the two side door panels and animates them upward around hinges with a wide opening angle at each stop. The outdoor scenery moves opposite the car's forward direction during travel.
+The supplied Y-up `monster_truck.glb` replaces the MRT carriage and keeps the station route, destination picker, exterior journey, and station stops. The truck has no doors, so there is no door control; the journey proceeds and station arrival is handled without a door animation. The supplied HDR sky remains visible throughout travel and at every station.

@@ -47,10 +47,11 @@ let fpvBounds = { minX: -2.1, maxX: 2.1, minZ: -19, maxZ: 19 };
 let trainCarriageLength = 18;
 let yaw = 0, pitch = 0, zoom = 72, dragging = false, lastX = 0, lastY = 0;
 let travelStart = 0, doorProgress = 0, doorTarget = 0;
+const vehicleHasDoors = false;
 let travelPhase = "idle";
 let updateDoors = () => {};
 let updatePartition = () => {};
-let setDoorTarget = open => { doorTarget = open ? 1 : 0; };
+let setDoorTarget = () => { doorTarget = 0; doorProgress = 0; };
 const CLOSED_LEFT = -.56, CLOSED_RIGHT = .56;
 
 function setLoading(message, error = false) {
@@ -171,7 +172,7 @@ function loadHdrSky() {
   new RGBELoader().load("SKY HDR pp.hdr", texture => {
     texture.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = texture;
-    scene.environmentIntensity = stationNightMode ? .35 : 0;
+    scene.environmentIntensity = .35;
 
     hdrSkyDome = new THREE.Mesh(
       new THREE.SphereGeometry(190, 64, 40),
@@ -179,8 +180,9 @@ function loadHdrSky() {
     );
     hdrSkyDome.name = "Supplied HDR exterior sky";
     hdrSkyDome.renderOrder = -2;
-    hdrSkyDome.visible = stationNightMode;
+    hdrSkyDome.visible = true;
     scene.add(hdrSkyDome);
+    if (daySkyDome) daySkyDome.visible = false;
     if (nightSkyDome) nightSkyDome.visible = false;
   }, undefined, error => {
     console.warn("The supplied HDR sky could not be loaded; using the procedural sky instead.", error);
@@ -190,10 +192,10 @@ function loadHdrSky() {
 function setStationNightMode(active) {
   if (stationNightMode === active) return;
   stationNightMode = active;
-  if (daySkyDome) daySkyDome.visible = !active;
-  if (nightSkyDome) nightSkyDome.visible = active && !hdrSkyDome;
-  if (hdrSkyDome) hdrSkyDome.visible = active;
-  if (scene.environment) scene.environmentIntensity = active ? .35 : 0;
+  if (daySkyDome) daySkyDome.visible = !hdrSkyDome && !active;
+  if (nightSkyDome) nightSkyDome.visible = !hdrSkyDome && active;
+  if (hdrSkyDome) hdrSkyDome.visible = true;
+  if (scene.environment) scene.environmentIntensity = .35;
   const skyColor = active ? 0x081226 : 0x9fb8c9;
   scene.background.set(skyColor);
   scene.fog.color.set(skyColor);
@@ -311,8 +313,9 @@ function buildScene() {
   const doorL = box(1.1, 2.05, .18, mats.glass, CLOSED_LEFT, 1.45, -20.78);
   const doorR = box(1.1, 2.05, .18, mats.glass, CLOSED_RIGHT, 1.45, -20.78);
   const closedDoorY = 1.45, doorLift = 2.12;
-  setDoorTarget = open => { doorTarget = open ? 1 : 0; };
+  setDoorTarget = () => { doorTarget = 0; doorProgress = 0; };
   updateDoors = dt => {
+    if (!vehicleHasDoors) { doorTarget = 0; doorProgress = 0; return; }
     doorProgress = THREE.MathUtils.damp(doorProgress, doorTarget, 3.2, dt);
     doorL.position.x = CLOSED_LEFT;
     doorR.position.x = CLOSED_RIGHT;
@@ -377,61 +380,50 @@ function buildScene() {
   buildPlaceholderStation(stationContent);
   station.visible = false;
   loadCyberpunkEnvironment();
-  loadLamboVehicle();
+  loadMonsterTruck();
   return { seatGroup, fallbackSeat, doorL, doorR, updateDoors, setDoorTarget };
 }
 
-function loadLamboVehicle() {
+function loadMonsterTruck() {
   const loader = new GLTFLoader();
-  loader.load("lambo.glb", gltf => {
+  loader.load("monster_truck.glb", gltf => {
     const car = gltf.scene;
     const bounds = new THREE.Box3().setFromObject(car);
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
     car.position.x -= center.x;
     car.position.z -= center.z;
+    car.position.y -= bounds.min.y;
 
-    const modelScale = 4.3 / (size.z || 1);
+    // The supplied GLB is Y-up. Its longest horizontal axis is local X;
+    // rotate it so the truck's front faces the driver's forward (+Z) view.
+    const modelScale = 4.3 / Math.max(size.x, size.z, .001);
     trainModelRoot = new THREE.Group();
-    trainModelRoot.name = "Lamborghini trial vehicle";
+    trainModelRoot.name = "Monster truck vehicle";
+    trainModelRoot.rotation.y = -Math.PI / 2;
     trainModelRoot.scale.setScalar(modelScale);
     trainModelRoot.add(car);
     scene.add(trainModelRoot);
     trainModelRoot.updateMatrixWorld(true);
 
-    // This GLB has no animation clips and its body panels are fused. Extract
-    // the two side door skins from the body triangles and hinge those skins
-    // around measured front edges while keeping their source material/UVs.
-    const doors = separateHingedCarDoors(car);
-    trainHalfWidth = size.x * modelScale / 2;
-    trainCarriageLength = size.z * modelScale;
-    fpvBounds = { minX: -.62, maxX: .72, minZ: -.9, maxZ: 1.1 };
-    // Right hand drive: the driver's seat is on the car's negative-X side.
-    // The model's positive-Z end is the front, so the driver's view faces +Z.
-    fpvPosition.set(-.27, .195 * modelScale, -.04 * modelScale);
+    trainHalfWidth = size.z * modelScale / 2;
+    trainCarriageLength = size.x * modelScale;
+    fpvBounds = {
+      minX: -trainHalfWidth + .18, maxX: trainHalfWidth - .18,
+      minZ: -trainCarriageLength / 2 + .25, maxZ: trainCarriageLength / 2 - .25
+    };
+    fpvPosition.set(-.38, Math.max(1.35, size.y * modelScale * .58), .42);
     yaw = Math.PI;
     pitch = 0;
     train.visible = false;
     trainModelRoot.updateMatrixWorld(true);
 
-    sideDoorPanels = doors.map(door => {
-      const world = door.pivot.getWorldPosition(new THREE.Vector3());
-      const side = Math.sign(world.x);
-      return {
-        group: door.pivot,
-        hinge: true,
-        openAngle: door.openAngle,
-        side,
-        worldX: world.x,
-        worldZ: world.z
-      };
-    });
-    console.info("Lambo trial GLB loaded.", { dimensions: size, scale: modelScale, hingedDoors: doors.length });
-    if (doors.length !== 2) console.warn("Expected two door panels; the GLB geometry may need manual separation.", doors.length);
+    sideDoorPanels = [];
+    console.info("Monster truck GLB loaded.", { dimensions: size, scale: modelScale, upAxis: "Y" });
     markAssetReady();
   }, undefined, error => {
-    console.error("Lambo GLB failed; keeping the procedural carriage available.", error);
-    setLoading("Car model unavailable. The original carriage is ready; check that lambo.glb is included.", true);
+    console.error("Monster truck GLB failed; keeping the procedural carriage available.", error);
+    setLoading("Monster truck unavailable. Check that monster_truck.glb is included.", true);
     $("continueBtn").hidden = false;
     markAssetReady();
   });
@@ -1167,8 +1159,8 @@ function updateFpvMovement(dt) {
     ? platformDoors.reduce((sum, door) => sum + door.worldX, 0) / platformDoors.length
     : -trainHalfWidth;
     nextZ = THREE.MathUtils.clamp(nextZ, fpvBounds.minZ, fpvBounds.maxZ);
-    const doorsOpen = doorTarget > .5 && doorProgress > .94;
-    const alignedWithOpenDoor = doorsOpen && platformDoors.some(door => Math.abs(door.worldZ - nextZ) < 1.05);
+    const doorsOpen = !vehicleHasDoors || (doorTarget > .5 && doorProgress > .94);
+    const alignedWithOpenDoor = doorsOpen && (!vehicleHasDoors || platformDoors.some(door => Math.abs(door.worldZ - nextZ) < 1.05));
   if (!outsideStation) {
       const insideLimit = alignedWithOpenDoor ? doorPlaneX - .45 : doorPlaneX + .16;
       nextX = THREE.MathUtils.clamp(nextX, Math.min(fpvBounds.minX, insideLimit), fpvBounds.maxX);
@@ -1198,14 +1190,11 @@ function updateFpvMovement(dt) {
 }
 
 function setTabletState() {
-    $("doorBtn").disabled = traveling || outsideStation || travelPhase !== "arrived";
-    $("doorBtn").innerHTML = doorTarget > .5 ? "<b>▾</b> CLOSE CAR DOORS" : "<b>▴</b> OPEN CAR DOORS";
   if (outsideStation) $("tabletStatus").textContent = `ON PLATFORM • ${selectedDestination?.title ?? "STATION"}`;
-  else if (travelPhase === "doorsClosingForTravel") $("tabletStatus").textContent = "CLOSING CAR DOORS…";
+  else if (travelPhase === "doorsClosingForTravel") $("tabletStatus").textContent = "PREPARING JOURNEY…";
   else if (traveling) $("tabletStatus").textContent = `DRIVING TO ${selectedDestination?.title ?? "STATION"}`;
-    else if (travelPhase === "doorsOpening") $("tabletStatus").textContent = "CAR DOORS OPENING…";
-    else if (travelPhase === "arrived" && doorProgress < .03) $("tabletStatus").textContent = "DOORS CLOSED • AT STATION";
-    else if (travelPhase === "arrived") $("tabletStatus").textContent = "DOORS OPEN • STEP OUT";
+  else if (travelPhase === "doorsOpening") $("tabletStatus").textContent = "ARRIVING AT STATION…";
+  else if (travelPhase === "arrived") $("tabletStatus").textContent = "AT STATION • STEP OUT WHEN READY";
   else $("tabletStatus").textContent = "CAR READY";
   document.querySelectorAll("[data-station]").forEach(button => { button.disabled = traveling || outsideStation || travelPhase === "doorsClosing"; });
   updateAboutPlayerSelector();
@@ -1240,7 +1229,7 @@ function beginTravel(destination) {
   $("hud").classList.remove("kopiBoyNoHud");
   traveling = true; travelPhase = "doorsClosingForTravel";
   setDoorTarget(false);
-  $("stationHud").textContent = "CLOSING CAR DOORS";
+  $("stationHud").textContent = "PREPARING TO DEPART";
   setTabletState();
 }
 function arrive() {
@@ -1328,12 +1317,6 @@ function setupInput() {
       canvas.focus({ preventScroll: true });
     });
   });
-  $("doorBtn").addEventListener("click", () => {
-      if (traveling || outsideStation || travelPhase !== "arrived") return;
-      setDoorTarget(doorTarget < .5);
-    setTabletState();
-    $("doorBtn").blur();
-  });
   $("aboutPrev").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(-1); });
   $("aboutNext").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(1); });
   $("startBtn").addEventListener("click", () => {
@@ -1414,13 +1397,10 @@ function animate() {
   const atWebDevelopmentStation = selectedDestination?.id === "web-development" && !traveling &&
     (travelPhase === "doorsOpening" || travelPhase === "arrived" || outsideStation);
   for (const item of cyberpunkCityInstances) item.building.visible = !atWebDevelopmentStation;
-  if (travelPhase === "doorsOpening" && doorProgress > .97) { travelPhase = "arrived"; setTabletState(); }
+  if (travelPhase === "doorsOpening" && (!vehicleHasDoors || doorProgress > .97)) { travelPhase = "arrived"; setTabletState(); }
   if (travelPhase === "doorsClosing" && doorProgress < .03) { travelPhase = "idle"; selectedDestination = null; setTabletState(); }
   if (travelPhase === "arrived") {
-    if (doorTarget > .5 && doorProgress < .97) $("tabletStatus").textContent = "CAR DOORS OPENING…";
-    else if (doorTarget < .5 && doorProgress > .03) $("tabletStatus").textContent = "CAR DOORS CLOSING…";
-    else if (doorTarget < .5) $("tabletStatus").textContent = "DOORS CLOSED • AT STATION";
-    else $("tabletStatus").textContent = "DOORS OPEN • STEP OUT";
+    $("tabletStatus").textContent = "AT STATION • STEP OUT WHEN READY";
   }
   updateCamera();
   positionAboutSelectorOnBoard();

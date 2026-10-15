@@ -33,9 +33,6 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .tablet button:hover:not(:disabled){border-color:#55c5ff;background:#103554;box-shadow:0 0 14px #1a9bd455}
 .tablet button:disabled{opacity:.42;cursor:not-allowed}
 .tablet button b{display:inline-block;width:25px;color:#58c9ff}
-.tablet .doorBtn{margin-top:13px;border-color:#9a7130;background:#30230c;color:#ffe4a0}
-.tablet .doorBtn b{color:#ffd166}
-.tablet .doorBtn:hover:not(:disabled){border-color:#ffd166;background:#49340d;box-shadow:0 0 14px #ffcf4a44}
 .tabletDivider{height:1px;background:#21465f;margin:15px 0}
 .exitBtn{border-color:#176d58!important;background:#073526!important}
 .exitBtn:not(:disabled){color:#7dffd0!important}
