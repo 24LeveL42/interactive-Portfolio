@@ -463,6 +463,32 @@ function separateHingedCarDoors(car) {
     const position = source.attributes.position;
     const meshToCar = carInverse.clone().multiply(mesh.matrixWorld);
     const sourceIndices = source.index.array;
+
+    // Keep separately-meshed side-door details, including the interior
+    // armrest, attached to the moving door as complete objects.
+    const componentBounds = new THREE.Box3().setFromBufferAttribute(position).applyMatrix4(meshToCar);
+    const componentSize = componentBounds.getSize(new THREE.Vector3());
+    const componentCenter = componentBounds.getCenter(new THREE.Vector3());
+    const componentSide = Math.sign(componentCenter.x);
+    const isDoorAccessory = componentSide && componentSize.x < .2 && componentSize.y < .22 &&
+      componentSize.z < .1 && Math.abs(componentCenter.x) > .16 &&
+      componentCenter.y > .16 && componentCenter.y < .42 && Math.abs(componentCenter.z) < .2;
+    if (isDoorAccessory) {
+      const accessoryGeometry = source.clone();
+      accessoryGeometry.applyMatrix4(meshToCar);
+      accessoryGeometry.translate(
+        -hingePositions[componentSide].x,
+        -hingePositions[componentSide].y,
+        -hingePositions[componentSide].z
+      );
+      const accessory = new THREE.Mesh(accessoryGeometry, mesh.material);
+      accessory.name = `${componentSide < 0 ? "Driver" : "Passenger"} door armrest and trim`;
+      accessory.castShadow = true;
+      accessory.receiveShadow = true;
+      pivots.get(componentSide).add(accessory);
+      mesh.visible = false;
+      continue;
+    }
     const remainingByMaterial = new Map();
     const doorByMaterial = { [-1]: new Map(), [1]: new Map() };
     const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
@@ -487,7 +513,7 @@ function separateHingedCarDoors(car) {
       const side = Math.sign(x);
       // The side window, mirror, and lower door skin occupy this side band;
       // exclude the wheel zones at either end of the car.
-      const belongsToDoor = Math.abs(x) > .115 && y > .015 && y < .235 && Math.abs(z) < .14;
+      const belongsToDoor = Math.abs(x) > .115 && y > .015 && y < .36 && Math.abs(z) < .14;
       const materialIndex = materialForTriangle(i);
       if (belongsToDoor && side) appendTriangle(doorByMaterial[side], materialIndex, ids);
       else appendTriangle(remainingByMaterial, materialIndex, ids);
@@ -533,7 +559,8 @@ function separateHingedCarDoors(car) {
   return [-1, 1].map(side => ({
     pivot: pivots.get(side),
     // High front hinges lift the panels above the roof, matching the reference.
-    openAngle: side < 0 ? -1.95 : 1.95,
+    // Both panels swing forward on the requested X axis.
+    openAngle: 1.7,
     extractedTriangles
   }));
 }
