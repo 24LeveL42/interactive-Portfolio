@@ -39,10 +39,10 @@ Use the close button on the portfolio journey panel to hide it and the floating 
 
 ## Supplied sky texture
 
-SKY HDR pp.hdr is used as the sky and reflection environment at night stops. Daytime scenes keep the existing daylight sky; the built-in procedural night sky remains available if the HDR cannot load.
+SKY HDR pp.hdr is used as the sky and reflection environment at every station stop. The built-in procedural sky remains available if the HDR cannot load.
 
 
 
 ## Lamborghini trial
 
-The current trial uses `lambo.glb` in place of the MRT carriage while keeping the station route, destination picker, exterior journey, and station stops. The starting first-person view is placed at the right-hand-drive seat. The supplied GLB has no animation clips and does not expose separate door objects, so the app extracts the two side body panels and animates them around hinges when doors open at a stop.
+The current trial uses the latest supplied `lambo.glb` in place of the MRT carriage while keeping the station route, destination picker, exterior journey, and station stops. The starting first-person view is placed at the right-hand-drive seat and stays fixed when the car stops. The GLB has no animation clips or separate door objects, so the app extracts the two side door panels and animates them upward around hinges when doors open at a stop.

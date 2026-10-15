@@ -464,9 +464,18 @@ function separateHingedCarDoors(car) {
     const position = source.attributes.position;
     const meshToCar = carInverse.clone().multiply(mesh.matrixWorld);
     const sourceIndices = source.index.array;
-    const remaining = [];
-    const doorIndices = { [-1]: [], [1]: [] };
+    const remainingByMaterial = new Map();
+    const doorByMaterial = { [-1]: new Map(), [1]: new Map() };
     const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+
+    const materialForTriangle = triangleStart => {
+      const group = source.groups.find(item => triangleStart >= item.start && triangleStart < item.start + item.count);
+      return group?.materialIndex ?? 0;
+    };
+    const appendTriangle = (map, materialIndex, ids) => {
+      if (!map.has(materialIndex)) map.set(materialIndex, []);
+      map.get(materialIndex).push(...ids);
+    };
 
     for (let i = 0; i + 2 < sourceIndices.length; i += 3) {
       const ids = [sourceIndices[i], sourceIndices[i + 1], sourceIndices[i + 2]];
@@ -480,14 +489,21 @@ function separateHingedCarDoors(car) {
       // The side window, mirror, and lower door skin occupy this side band;
       // exclude the wheel zones at either end of the car.
       const belongsToDoor = Math.abs(x) > .115 && y > .015 && y < .235 && Math.abs(z) < .14;
-      if (belongsToDoor && side) doorIndices[side].push(...ids);
-      else remaining.push(...ids);
+      const materialIndex = materialForTriangle(i);
+      if (belongsToDoor && side) appendTriangle(doorByMaterial[side], materialIndex, ids);
+      else appendTriangle(remainingByMaterial, materialIndex, ids);
     }
 
     for (const side of [-1, 1]) {
-      const indices = doorIndices[side];
-      if (!indices.length) continue;
+      const groups = doorByMaterial[side];
+      if (!groups.size) continue;
       const doorGeometry = source.clone();
+      const indices = [];
+      doorGeometry.clearGroups();
+      for (const [materialIndex, groupIndices] of groups) {
+        doorGeometry.addGroup(indices.length, groupIndices.length, materialIndex);
+        indices.push(...groupIndices);
+      }
       doorGeometry.setIndex(indices);
       doorGeometry.applyMatrix4(meshToCar);
       doorGeometry.translate(-hingePositions[side].x, -hingePositions[side].y, -hingePositions[side].z);
@@ -501,7 +517,13 @@ function separateHingedCarDoors(car) {
       extractedTriangles += indices.length / 3;
     }
 
-    if (doorIndices[-1].length || doorIndices[1].length) {
+    if (doorByMaterial[-1].size || doorByMaterial[1].size) {
+      const remaining = [];
+      source.clearGroups();
+      for (const [materialIndex, groupIndices] of remainingByMaterial) {
+        source.addGroup(remaining.length, groupIndices.length, materialIndex);
+        remaining.push(...groupIndices);
+      }
       source.setIndex(remaining);
       source.computeBoundingBox();
       source.computeBoundingSphere();
@@ -1360,7 +1382,7 @@ function animate() {
   } else if (!stationNightMode) {
     scene.background.set(0x9fb8c9); scene.fog.color.set(0x9fb8c9);
   }
-  const atNightStation = ["3d-art", "web-development", "kopi-boy"].includes(selectedDestination?.id) && !traveling &&
+  const atNightStation = Boolean(selectedDestination) && !traveling &&
     (travelPhase === "doorsOpening" || travelPhase === "arrived" || outsideStation);
   setStationNightMode(atNightStation);
   const atWebDevelopmentStation = selectedDestination?.id === "web-development" && !traveling &&
