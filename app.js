@@ -11,7 +11,6 @@ const destinations = [
   { id: "about-me", title: "ABOUT ME", stationName: "About Me", description: "A little about Rajini", placeholderContent: "About Me station coming soon", modelPath: null, futureModelPath: "about.glb" },
   { id: "3d-art", title: "3D ART", stationName: "3D Art", description: "Selected 3D work", placeholderContent: "Selected 3D work", modelPath: "mrt_station_board_3D.glb", futureModelPath: "3dart.glb" },
   { id: "web-development", title: "WEB DEVELOPMENT", stationName: "Web Development", description: "Web projects and experiments", placeholderContent: "Web Development station coming soon", modelPath: "website_station_new.glb", futureModelPath: "web.glb" },
-  { id: "digital-marketing", title: "DIGITAL MARKETING", stationName: "Digital Marketing", description: "Digital marketing work", placeholderContent: "Digital Marketing station coming soon", modelPath: null, futureModelPath: "marketing.glb" },
   { id: "kopi-boy", title: "KOPI BOY", stationName: "Kopi Boy", description: "The next big delivery platform is in the making", placeholderContent: "I’m building a faster, smarter way to connect people, riders and local businesses — one delivery at a time.", modelPath: null, futureModelPath: "kopi-boy.glb" },
   { id: "contact", title: "CONTACT", stationName: "Contact", description: "Get in touch with Rajini", placeholderContent: "Contact station coming soon", modelPath: null, futureModelPath: "contact.glb" }
 ];
@@ -320,7 +319,7 @@ function buildScene() {
     doorL.position.y = closedDoorY + doorLift * doorProgress;
     doorR.position.y = closedDoorY + doorLift * doorProgress;
     sideDoorPanels.forEach(door => {
-      if (door.hinge) door.group.rotation.x = door.openAngle * doorProgress;
+      if (door.hinge) door.group.rotation.z = door.openAngle * doorProgress;
       else door.group.position.x = door.baseX + door.direction * door.travel * doorProgress;
     });
   };
@@ -534,7 +533,7 @@ function separateHingedCarDoors(car) {
   return [-1, 1].map(side => ({
     pivot: pivots.get(side),
     // High front hinges lift the panels above the roof, matching the reference.
-    openAngle: 1.35,
+    openAngle: side < 0 ? -1.95 : 1.95,
     extractedTriangles
   }));
 }
@@ -635,7 +634,7 @@ function loadCyberpunkEnvironment() {
 
 function updateCyberpunkEnvironment(dt) {
   if (!cyberpunkCityInstances.length) return;
-  if (traveling) cyberpunkCityScroll += dt * 24;
+  if (traveling) cyberpunkCityScroll -= dt * 24;
   const ringStart = -cyberpunkCityRingLength / 2;
   for (const item of cyberpunkCityInstances) {
     const wrapped = ((item.baseZ + cyberpunkCityScroll - ringStart) % cyberpunkCityRingLength + cyberpunkCityRingLength) % cyberpunkCityRingLength;
@@ -1374,7 +1373,7 @@ function animate() {
     setTabletState();
   }
   if (running && traveling && travelPhase === "travelling") {
-    outside.position.z = (outside.position.z + dt * 24) % 240;
+    outside.position.z = (outside.position.z - dt * 24) % 240;
     updateCyberpunkEnvironment(dt);
     scene.background.setHSL(.56, .18, .48 + .11 * Math.sin(now * 1.4));
     scene.fog.color.copy(scene.background);

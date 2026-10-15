@@ -45,4 +45,4 @@ SKY HDR pp.hdr is used as the sky and reflection environment at every station st
 
 ## Lamborghini trial
 
-The current trial uses the latest supplied `lambo.glb` in place of the MRT carriage while keeping the station route, destination picker, exterior journey, and station stops. The starting first-person view is placed at the right-hand-drive seat and stays fixed when the car stops. The GLB has no animation clips or separate door objects, so the app extracts the two side door panels and animates them upward around hinges when doors open at a stop.
+The current trial uses the latest supplied `lambo.glb` in place of the MRT carriage while keeping the station route, destination picker, exterior journey, and station stops. The starting first-person view is placed at the right-hand-drive seat and stays fixed when the car stops. The GLB has no animation clips or separate door objects, so the app extracts the two side door panels and animates them upward around hinges with a wide opening angle at each stop. The outdoor scenery moves opposite the car's forward direction during travel.
