@@ -491,7 +491,7 @@ function arrangeArtStationRow() {
   const figures = artSpinPivots.filter(spinner => !spinner.isCircle);
   const circles = artSpinPivots.filter(spinner => spinner.isCircle);
   const usedCircles = new Set();
-  const rowSpacing = 2.35;
+  const rowSpacing = 2.8;
   figures.forEach((figure, index) => {
     const circle = circles.find(candidate => !usedCircles.has(candidate)
       && candidate.authoredPosition.distanceTo(figure.authoredPosition) < .002)
@@ -500,10 +500,9 @@ function arrangeArtStationRow() {
     usedCircles.add(circle);
     const rowZ = (index - (figures.length - 1) / 2) * rowSpacing;
     figure.pivot.position.set(0, 1.1, rowZ);
-    // All imported characters use +Z as their authored forward direction.
-    // Cancel their individual GLB yaw so the station's +90° facing turns +Z
-    // toward the truck (+X in world space).
-    figure.baseYaw = -figure.authoredYaw;
+    // The welcome line runs alongside the truck's lane. Imported characters
+    // face +Z; turn them toward the truck from the lineup's +X side (-X).
+    figure.baseYaw = -Math.PI / 2 - figure.authoredYaw;
     figure.pivot.rotation.set(0, figure.baseYaw, 0);
     circle.pivot.position.set(0, 0, rowZ);
     circle.pivot.rotation.y = 0;
@@ -587,7 +586,7 @@ function loadArtInfoBoard(parent, displayOffset, requestId) {
     board.position.copy(center).multiplyScalar(-boardScale);
     placement.add(board);
     parent.add(placement);
-    console.info("Loaded the 3D Art information board at 3x scale beside the exhibit lineup.");
+  console.info("Loaded the 3D Art information board at 3x scale beside the welcome lineup.");
   }, undefined, error => {
     console.warn("Could not load the 3D Art information board.", error);
   });
@@ -1120,13 +1119,15 @@ async function loadStationModel(destination) {
       const scale = isArtStation ? 1 : targetWidth / Math.max(size.x, .001);
       const placement = new THREE.Group();
       placement.name = `${destination.stationName} station model placement`;
-      placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
-      // Set the destination model toward the platform's outer edge so it stays
-      // visible from the vehicle.
-      const platformOffset = isArtStation ? 10.5 : destination.id === "web-development" ? 2.55 : 4;
+      placement.rotation.y = destination.id === "web-development"
+        ? -Math.PI / 2
+        : isArtStation ? 0 : Math.PI / 2;
+      // The Art lineup runs front-to-back beside the vehicle lane; all other
+      // station models remain at their usual outer platform edge.
+      const platformOffset = isArtStation ? 7 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(
-        -(trainHalfWidth + platformOffset),
+        isArtStation ? trainHalfWidth + platformOffset : -(trainHalfWidth + platformOffset),
         isArtStation ? .05 : size.y * scale / 2 + .05,
         alongPlatform
       );
