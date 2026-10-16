@@ -443,18 +443,36 @@ function prepareArtStationSpinners(model) {
     if (!parent) return;
     node.geometry.computeBoundingBox();
     const geometryCenter = node.geometry.boundingBox.getCenter(new THREE.Vector3());
-    const pivotPosition = geometryCenter.clone()
-      .multiply(node.scale)
-      .applyQuaternion(node.quaternion)
-      .add(node.position);
+    node.updateWorldMatrix(true, false);
+    parent.updateWorldMatrix(true, false);
+    const centerWorld = node.localToWorld(geometryCenter.clone());
+    const pivotPosition = parent.worldToLocal(centerWorld.clone());
     const pivot = new THREE.Group();
     pivot.name = `${node.name} slow spin pivot`;
     pivot.position.copy(pivotPosition);
     parent.add(pivot);
-    // The updated GLB stores each exhibit's vertices far from its node origin.
-    // Offset the mesh by its own bounds center so the pivot turns it in place.
-    node.position.copy(geometryCenter).negate();
-    pivot.add(node);
+    pivot.attach(node);
+    // Recentering the mesh geometry makes its object origin coincide with the
+    // fixed pivot, even though this GLB bakes the exhibit positions into vertices.
+    node.geometry = node.geometry.clone();
+    const position = node.geometry.getAttribute("position");
+    const childCenterOffset = geometryCenter.clone()
+      .multiply(node.scale)
+      .applyQuaternion(node.quaternion);
+    node.position.add(childCenterOffset);
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      position.setXYZ(
+        vertex,
+        position.getX(vertex) - geometryCenter.x,
+        position.getY(vertex) - geometryCenter.y,
+        position.getZ(vertex) - geometryCenter.z
+      );
+    }
+    position.needsUpdate = true;
+    node.geometry.computeBoundingBox();
+    node.geometry.computeBoundingSphere();
+    const isCircle = /^circle/i.test(node.name);
+    node.scale.multiplyScalar(isCircle ? 1.75 : 5);
     const magnitude = /^circle/i.test(node.name) ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
     const direction = Math.random() < .5 ? -1 : 1;
     artSpinPivots.push({ pivot, speed: direction * magnitude, phase: index * .37 });
@@ -1048,7 +1066,7 @@ async function loadStationModel(destination) {
       placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
       // Set the destination model toward the platform's outer edge so it stays
       // visible from the vehicle.
-      const platformOffset = isArtStation ? 7.5 : destination.id === "web-development" ? 2.55 : 4;
+      const platformOffset = isArtStation ? 10.5 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
       model.scale.setScalar(scale);
