@@ -46,3 +46,5 @@ SKY HDR pp.hdr is used continuously as the exterior sky and reflection environme
 ## Monster truck
 
 The supplied Y-up `monster_truck.glb` is the portfolio vehicle. The driver camera starts raised in the cab and faces through the windshield. During travel, the exterior moves opposite the vehicle's forward direction so the drive reads correctly. Destination stops and station scenes remain part of the portfolio experience. The supplied HDR sky remains visible throughout travel and at every station.
+
+Five copies of `flying_bike.glb` fly on separate looping paths around the active destination and remain in the experience during travel. The 3D Art stop uses `3d_set_4_station.glb`; each included model and circular display base spins slowly with its own randomly chosen direction.

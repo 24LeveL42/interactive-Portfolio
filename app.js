@@ -9,7 +9,7 @@ const loading = $("loading");
 const loadingMessage = $("loadingMessage");
 const destinations = [
   { id: "about-me", title: "ABOUT ME", stationName: "About Me", description: "A little about Rajini", placeholderContent: "About Me station coming soon", modelPath: null, futureModelPath: "about.glb" },
-  { id: "3d-art", title: "3D ART", stationName: "3D Art", description: "Selected 3D work", placeholderContent: "Selected 3D work", modelPath: "mrt_station_board_3D.glb", futureModelPath: "3dart.glb" },
+  { id: "3d-art", title: "3D ART", stationName: "3D Art", description: "Selected 3D work", placeholderContent: "Selected 3D work", modelPath: "3d_set_4_station.glb", futureModelPath: "3dart.glb" },
   { id: "web-development", title: "WEB DEVELOPMENT", stationName: "Web Development", description: "Web projects and experiments", placeholderContent: "Web Development station coming soon", modelPath: "website_station_new.glb", futureModelPath: "web.glb" },
   { id: "kopi-boy", title: "KOPI BOY", stationName: "Kopi Boy", description: "The next big delivery platform is in the making", placeholderContent: "I’m building a faster, smarter way to connect people, riders and local businesses — one delivery at a time.", modelPath: null, futureModelPath: "kopi-boy.glb" },
   { id: "contact", title: "CONTACT", stationName: "Contact", description: "Get in touch with Rajini", placeholderContent: "Contact station coming soon", modelPath: null, futureModelPath: "contact.glb" }
@@ -26,6 +26,7 @@ const aboutProfileCardHeight = 1.508 * aboutProfileCardScale;
 
 let renderer, scene, camera, clock, train, trainModelRoot, outside, station, stationContent;
 let aboutSelectionPairs = [], aboutSelectionIndex = 0, aboutSelectionMotion = null, aboutSelectionGeneration = 0;
+let flyingBikes = [], artSpinPivots = [];
 const aboutSelectionBaseZ = -0.5;
 let creatorStampsFloat = null;
 let kopiBoyFireworks = null, kopiBoyRider = null;
@@ -380,8 +381,81 @@ function buildScene() {
   buildPlaceholderStation(stationContent);
   station.visible = false;
   loadCyberpunkEnvironment();
+  loadFlyingBikes();
   loadMonsterTruck();
   return { seatGroup, fallbackSeat, doorL, doorR, updateDoors, setDoorTarget };
+}
+
+function loadFlyingBikes() {
+  new GLTFLoader().load("flying_bike.glb", gltf => {
+    const template = gltf.scene;
+    const bounds = new THREE.Box3().setFromObject(template);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    template.position.sub(center);
+    const modelScale = 2.7 / Math.max(size.x, size.y, size.z, .001);
+    for (let index = 0; index < 5; index++) {
+      const root = new THREE.Group();
+      root.name = `Flying bike ${index + 1}`;
+      const bike = template.clone(true);
+      bike.scale.setScalar(modelScale);
+      root.add(bike);
+      scene.add(root);
+      const direction = index % 2 ? -1 : 1;
+      flyingBikes.push({
+        root,
+        phase: index * (Math.PI * 2 / 5) + Math.random() * .45,
+        speed: direction * (.12 + Math.random() * .095),
+        radiusX: 10 + index * 2.25,
+        radiusZ: 13 + (index % 3) * 4.5,
+        height: 3.4 + (index % 3) * 1.05,
+        bob: .45 + Math.random() * .35
+      });
+    }
+    console.info("Loaded five flying bikes for the full portfolio journey.");
+  }, undefined, error => {
+    console.error("Flying bike GLB failed to load.", error);
+  });
+}
+
+function updateFlyingBikes(now) {
+  for (const flyer of flyingBikes) {
+    const angle = now * flyer.speed + flyer.phase;
+    const x = fpvPosition.x + Math.cos(angle) * flyer.radiusX;
+    const z = fpvPosition.z + Math.sin(angle) * flyer.radiusZ;
+    const y = flyer.height + Math.sin(angle * 1.7 + flyer.phase) * flyer.bob;
+    flyer.root.position.set(x, y, z);
+    const velocityX = -Math.sin(angle) * flyer.radiusX * flyer.speed;
+    const velocityZ = Math.cos(angle) * flyer.radiusZ * flyer.speed;
+    flyer.root.rotation.y = Math.atan2(velocityX, velocityZ);
+    flyer.root.rotation.x = Math.cos(angle * 1.7 + flyer.phase) * .025;
+  }
+}
+
+function prepareArtStationSpinners(model) {
+  artSpinPivots = [];
+  const spinNodes = [];
+  model.traverse(node => {
+    if (node.isMesh && (/^tripo_node_/i.test(node.name) || /^circle/i.test(node.name))) spinNodes.push(node);
+  });
+  spinNodes.forEach((node, index) => {
+    const parent = node.parent;
+    if (!parent) return;
+    const pivot = new THREE.Group();
+    pivot.name = `${node.name} slow spin pivot`;
+    pivot.position.copy(node.position);
+    parent.add(pivot);
+    node.position.set(0, 0, 0);
+    pivot.add(node);
+    const magnitude = /^circle/i.test(node.name) ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
+    const direction = Math.random() < .5 ? -1 : 1;
+    artSpinPivots.push({ pivot, speed: direction * magnitude, phase: index * .37 });
+  });
+  console.info(`Prepared ${artSpinPivots.length} 3D Art models and display circles for slow random-direction spins.`);
+}
+
+function updateArtStationSpinners(dt) {
+  for (const spinner of artSpinPivots) spinner.pivot.rotation.y += spinner.speed * dt;
 }
 
 function loadMonsterTruck() {
@@ -869,6 +943,7 @@ function updateKopiBoyStation(dt, now) {
 async function loadStationModel(destination) {
   const requestId = ++aboutSelectionGeneration;
   creatorStampsFloat = null;
+  artSpinPivots = [];
   aboutSelectionPairs = [];
   aboutSelectionIndex = 0;
   aboutSelectionMotion = null;
@@ -892,60 +967,27 @@ async function loadStationModel(destination) {
     new GLTFLoader().load(destination.modelPath, gltf => {
       const model = gltf.scene;
       const mappedMaterials = new Set();
-      let dashboardMaterials = 0;
       const isArtStation = destination.id === "3d-art";
-      const dashboardTexture = isArtStation ? new THREE.TextureLoader().load(
-        "3d_art_station_dashboard.png",
-        () => console.info("Loaded the supplied 3D Art Station Dashboard image.")
-      ) : null;
-      if (dashboardTexture) dashboardTexture.colorSpace = THREE.SRGBColorSpace;
       model.traverse(node => {
         if (!node.isMesh) return;
         const materials = Array.isArray(node.material) ? node.material : [node.material];
         materials.forEach(material => {
           if (material?.map) mappedMaterials.add(material);
           prepareStationNightMaterial(material);
-          if (isArtStation && material?.name === "Material.009") {
-            // Material.009 is the large flat display face. Rebuild its UVs
-            // from that face's local XY bounds so the supplied dashboard
-            // image fills the whole screen, independent of the GLB's old UVs.
-            const position = node.geometry.getAttribute("position");
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            for (let i = 0; i < position.count; i++) {
-              const x = position.getX(i), y = position.getY(i);
-              minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-              minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-            }
-            const uv = new Float32Array(position.count * 2);
-            const width = Math.max(maxX - minX, .0001), height = Math.max(maxY - minY, .0001);
-            for (let i = 0; i < position.count; i++) {
-              uv[i * 2] = (position.getX(i) - minX) / width;
-              uv[i * 2 + 1] = (position.getY(i) - minY) / height;
-            }
-            node.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-            material.map = dashboardTexture;
-            prepareStationNightMaterial(material, dashboardTexture);
-            material.color?.set(0xffffff);
-            material.metalness = 0;
-            material.roughness = .78;
-            material.needsUpdate = true;
-            dashboardMaterials++;
-          }
         });
       });
-      console.info(
-        `Loaded ${destination.stationName} model with ${mappedMaterials.size} original embedded-texture materials${isArtStation ? `; dashboard image assigned to ${dashboardMaterials} large display surface(s) with fitted UVs` : ""}.`
-      );
+      if (isArtStation) prepareArtStationSpinners(model);
+      console.info(`Loaded ${destination.stationName} model with ${mappedMaterials.size} original embedded-texture materials.`);
       const bounds = new THREE.Box3().setFromObject(model);
       const size = bounds.getSize(new THREE.Vector3());
       const center = bounds.getCenter(new THREE.Vector3());
-      const targetWidth = destination.id === "web-development" ? 10 : 2.8;
+      const targetWidth = isArtStation ? 8.5 : destination.id === "web-development" ? 10 : 2.8;
       const scale = targetWidth / Math.max(size.x, .001);
       const placement = new THREE.Group();
       placement.name = `${destination.stationName} station model placement`;
       placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
       // Set the destination model toward the platform's outer edge so it stays
-      // visible from the open train doors.
+      // visible from the vehicle.
       const platformOffset = destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
@@ -953,11 +995,7 @@ async function loadStationModel(destination) {
       model.position.copy(center).multiplyScalar(-scale);
       placement.add(model);
       stationContent.add(placement);
-      if (destination.id === "3d-art") {
-        loadStationBuilding(stationContent);
-        loadCreatorStamps(stationContent);
-      }
-      console.info(`Loaded ${destination.stationName} station model, centered on platform and facing the train.`);
+      console.info(`Loaded ${destination.stationName} station model, centered on platform and facing the vehicle.`);
       resolve(true);
     }, undefined, error => {
       console.warn(`Could not load station model for ${destination.title}; keeping placeholder.`, error);
@@ -1371,6 +1409,8 @@ function animate() {
   for (const pair of aboutSelectionPairs) {
     if (pair?.visible && pair.userData.animationMixer) pair.userData.animationMixer.update(dt);
   }
+  updateFlyingBikes(now);
+  updateArtStationSpinners(dt);
   updateKopiBoyStation(dt, now);
   updateFpvMovement(dt);
   if (running && !outsideStation) {
@@ -1404,7 +1444,7 @@ function animate() {
   if (travelPhase === "doorsOpening" && (!vehicleHasDoors || doorProgress > .97)) { travelPhase = "arrived"; setTabletState(); }
   if (travelPhase === "doorsClosing" && doorProgress < .03) { travelPhase = "idle"; selectedDestination = null; setTabletState(); }
   if (travelPhase === "arrived") {
-    $("tabletStatus").textContent = "AT STATION • STEP OUT WHEN READY";
+    $("tabletStatus").textContent = "DESTINATION REACHED • STEP OUT WHEN READY";
   }
   updateCamera();
   positionAboutSelectorOnBoard();
