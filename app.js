@@ -472,12 +472,31 @@ function prepareArtStationSpinners(model) {
     node.geometry.computeBoundingBox();
     node.geometry.computeBoundingSphere();
     const isCircle = /^circle/i.test(node.name);
-    node.scale.multiplyScalar(isCircle ? 1.75 : 5);
     const magnitude = /^circle/i.test(node.name) ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
     const direction = Math.random() < .5 ? -1 : 1;
-    artSpinPivots.push({ pivot, speed: direction * magnitude, phase: index * .37 });
+    artSpinPivots.push({ pivot, node, isCircle, speed: direction * magnitude, phase: index * .37 });
   });
   console.info(`Prepared ${artSpinPivots.length} 3D Art models and display circles for slow random-direction spins.`);
+}
+
+function sizeArtStationDisplays(sceneScale) {
+  const figureHeight = 2.2;
+  const displayDiameter = 1.15;
+  for (const spinner of artSpinPivots) {
+    const { node, isCircle } = spinner;
+    node.geometry.computeBoundingBox();
+    const size = node.geometry.boundingBox.getSize(new THREE.Vector3());
+    if (isCircle) {
+      const currentDiameter = Math.max(
+        size.x * Math.abs(node.scale.x),
+        size.z * Math.abs(node.scale.z)
+      ) * sceneScale;
+      node.scale.multiplyScalar(displayDiameter / Math.max(currentDiameter, .001));
+    } else {
+      const currentHeight = size.y * Math.abs(node.scale.y) * sceneScale;
+      node.scale.multiplyScalar(figureHeight / Math.max(currentHeight, .001));
+    }
+  }
 }
 
 function updateArtStationSpinners(dt) {
@@ -1070,6 +1089,7 @@ async function loadStationModel(destination) {
       const alongPlatform = 0;
       placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
       model.scale.setScalar(scale);
+      if (isArtStation) sizeArtStationDisplays(scale);
       model.position.copy(center).multiplyScalar(-scale);
       placement.add(model);
       stationContent.add(placement);
@@ -1443,6 +1463,14 @@ function setupInput() {
   $("startBtn").addEventListener("click", () => {
     $("startOverlay").classList.add("startHidden"); running = true;
     $("stationHud").textContent = "DRIVING"; setTabletState(); updateCamera();
+  });
+  $("landingFullscreen").addEventListener("click", async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch (error) {
+      console.warn("Fullscreen mode is unavailable in this browser.", error);
+    }
   });
   $("continueBtn").addEventListener("click", () => { finishLoading(); $("continueBtn").hidden = true; });
   $("reloadBtn").addEventListener("click", () => location.reload());

@@ -2,6 +2,8 @@
 
 A static Three.js portfolio experience. The current About Me player boards are 2.5x their previous size, and the selected character stands beside the board.
 
+The welcome screen uses the supplied `portfolio-landing.png` artwork. Its Start Exploring button begins the 3D experience, and its fullscreen control requests browser fullscreen.
+
 ## Run locally
 
 Double-click `Start Preview.bat` on Windows. It starts the included Node.js static server and opens `http://127.0.0.1:5174/`.

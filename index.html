@@ -60,15 +60,17 @@
 <div id="stationWorldLabel">STATION</div>
 <div id="stationInfo" class="stationInfo" hidden><strong id="stationDescription"></strong><span id="stationContent"></span></div>
 
-<div id="startOverlay">
-  <div class="startCard">
-  <div class="miniTrain">🚙</div>
-    <h1>RAJINI PORTFOLIO</h1>
-    <p>AN INTERACTIVE 3D EXPLORER</p>
-    <button id="startBtn">START EXPLORING</button>
-    <small>Take the driver’s seat and explore Rajini’s digital work.</small>
+<section id="startOverlay" class="startOverlay" aria-label="Rajini Kumar Portfolio welcome screen">
+  <img class="startArtwork" src="portfolio-landing.png" alt="Rajini Kumar Portfolio — Explore, Create, Experience">
+  <h1 class="visuallyHidden">Rajini Kumar Portfolio — Explore, Create, Experience</h1>
+  <button id="startBtn" class="landingStart" type="button" aria-label="Start exploring the portfolio"></button>
+  <button id="landingFullscreen" class="landingFullscreen" type="button" aria-label="Enter fullscreen">⛶ <span>ENTER FULLSCREEN</span></button>
+  <div class="landingMobileCopy" aria-hidden="true">
+    <span>WELCOME TO MY WORLD</span>
+    <strong>EXPLORE<br><em>CREATE</em><br>EXPERIENCE</strong>
+    <small>Take the driver’s seat and explore my journey.</small>
   </div>
-</div>
+</section>
 
 <div id="controlsHint">Drag mouse to look • WASD / arrows to move • Shift faster • Wheel zoom • Explore the station when stopped</div>
 
