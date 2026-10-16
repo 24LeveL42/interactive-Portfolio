@@ -441,11 +441,19 @@ function prepareArtStationSpinners(model) {
   spinNodes.forEach((node, index) => {
     const parent = node.parent;
     if (!parent) return;
+    node.geometry.computeBoundingBox();
+    const geometryCenter = node.geometry.boundingBox.getCenter(new THREE.Vector3());
+    const pivotPosition = geometryCenter.clone()
+      .multiply(node.scale)
+      .applyQuaternion(node.quaternion)
+      .add(node.position);
     const pivot = new THREE.Group();
     pivot.name = `${node.name} slow spin pivot`;
-    pivot.position.copy(node.position);
+    pivot.position.copy(pivotPosition);
     parent.add(pivot);
-    node.position.set(0, 0, 0);
+    // The updated GLB stores each exhibit's vertices far from its node origin.
+    // Offset the mesh by its own bounds center so the pivot turns it in place.
+    node.position.copy(geometryCenter).negate();
     pivot.add(node);
     const magnitude = /^circle/i.test(node.name) ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
     const direction = Math.random() < .5 ? -1 : 1;
@@ -456,6 +464,58 @@ function prepareArtStationSpinners(model) {
 
 function updateArtStationSpinners(dt) {
   for (const spinner of artSpinPivots) spinner.pivot.rotation.y += spinner.speed * dt;
+}
+
+function loadArtInfoBoard(parent, displayOffset, requestId) {
+  new GLTFLoader().load("mrt_station_board_3D.glb", gltf => {
+    if (requestId !== aboutSelectionGeneration) return;
+    const board = gltf.scene;
+    const dashboardTexture = new THREE.TextureLoader().load("3d_art_station_dashboard.png");
+    dashboardTexture.colorSpace = THREE.SRGBColorSpace;
+    board.traverse(node => {
+      if (!node.isMesh) return;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      materials.forEach(material => {
+        prepareStationNightMaterial(material);
+        if (material?.name !== "Material.009") return;
+        const position = node.geometry.getAttribute("position");
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (let index = 0; index < position.count; index++) {
+          const x = position.getX(index), y = position.getY(index);
+          minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        }
+        const uv = new Float32Array(position.count * 2);
+        const width = Math.max(maxX - minX, .0001), height = Math.max(maxY - minY, .0001);
+        for (let index = 0; index < position.count; index++) {
+          uv[index * 2] = (position.getX(index) - minX) / width;
+          uv[index * 2 + 1] = (position.getY(index) - minY) / height;
+        }
+        node.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        material.map = dashboardTexture;
+        material.color?.set(0xffffff);
+        material.metalness = 0;
+        material.roughness = .78;
+        prepareStationNightMaterial(material, dashboardTexture);
+        material.needsUpdate = true;
+      });
+    });
+    const bounds = new THREE.Box3().setFromObject(board);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const boardScale = 3;
+    const placement = new THREE.Group();
+    placement.name = "3D Art information board (3x scale)";
+    placement.rotation.y = Math.PI / 2;
+    placement.position.set(-(trainHalfWidth + displayOffset + 4.5), size.y * boardScale / 2 + .05, 0);
+    board.scale.setScalar(boardScale);
+    board.position.copy(center).multiplyScalar(-boardScale);
+    placement.add(board);
+    parent.add(placement);
+    console.info("Loaded the 3D Art information board at 3x scale beside the exhibit lineup.");
+  }, undefined, error => {
+    console.warn("Could not load the 3D Art information board.", error);
+  });
 }
 
 function loadMonsterTruck() {
@@ -988,13 +1048,14 @@ async function loadStationModel(destination) {
       placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
       // Set the destination model toward the platform's outer edge so it stays
       // visible from the vehicle.
-      const platformOffset = destination.id === "web-development" ? 2.55 : 4;
+      const platformOffset = isArtStation ? 7.5 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
       model.scale.setScalar(scale);
       model.position.copy(center).multiplyScalar(-scale);
       placement.add(model);
       stationContent.add(placement);
+      if (isArtStation) loadArtInfoBoard(stationContent, platformOffset, requestId);
       console.info(`Loaded ${destination.stationName} station model, centered on platform and facing the vehicle.`);
       resolve(true);
     }, undefined, error => {
