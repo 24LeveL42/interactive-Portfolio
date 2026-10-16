@@ -14,26 +14,26 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .tablet{
  position:fixed;z-index:20;right:4.5%;top:50%;transform:translateY(-50%);
  width:min(335px,31vw);max-height:88vh;overflow:auto;padding:20px;
- border-radius:22px;background:linear-gradient(145deg,#071522ee,#0b1b2cee);
- border:1px solid #3b8ebc;box-shadow:0 0 45px #001522,inset 0 0 30px #0a284055;
+ border-radius:18px;background:linear-gradient(145deg,#091722f5 0%,#101d28f2 58%,#211a12f2 100%);
+ border:1px solid #6c9dab;box-shadow:0 18px 55px #000a,inset 0 1px #d7f7ff22,inset 0 0 32px #e5a44312;
  backdrop-filter:blur(8px);transition:.2s
 }
 .tabletTop{display:flex;justify-content:space-between;align-items:flex-start}
 .tabletActions{display:flex;align-items:center;gap:10px}
-.panelClose{display:grid!important;place-items:center;width:30px!important;height:30px;margin:-4px -4px 0 0!important;padding:0!important;border:1px solid #3b8ebc!important;border-radius:8px!important;background:#0b2639!important;color:#d9f5ff!important;font-size:22px!important;line-height:1!important;text-align:center!important;cursor:pointer}
-.panelClose:hover{border-color:#8be6ff!important;background:#103d59!important}
-.journeyToggle{position:fixed;z-index:21;right:24px;bottom:22px;padding:12px 16px;border:1px solid #55c5ff;border-radius:12px;background:linear-gradient(145deg,#071522f2,#0b1b2cf2);color:#e8f6ff;font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:0 0 22px #087baf66;backdrop-filter:blur(8px);cursor:pointer}
-.journeyToggle:hover{border-color:#b5f0ff;background:#103554;box-shadow:0 0 28px #35cfff88}
+.panelClose{display:grid!important;place-items:center;width:30px!important;height:30px;margin:-4px -4px 0 0!important;padding:0!important;border:1px solid #658797!important;border-radius:9px!important;background:#102431!important;color:#e8f7ff!important;font-size:22px!important;line-height:1!important;text-align:center!important;cursor:pointer}
+.panelClose:hover{border-color:#ffd16c!important;background:#302819!important}
+.journeyToggle{position:fixed;z-index:21;right:24px;bottom:22px;padding:12px 16px;border:1px solid #d3a84f;border-radius:10px;background:linear-gradient(145deg,#101d27f5,#2b2112f5);color:#fff1cc;font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:0 8px 25px #0008,0 0 20px #d4922840;backdrop-filter:blur(8px);cursor:pointer}
+.journeyToggle:hover{border-color:#ffe09a;background:#392b16;box-shadow:0 0 28px #ffc65c66}
 .journeyToggle[hidden]{display:none}
-.tabletTop small{display:block;color:#67c9ff;font-size:9px;letter-spacing:2px}
+.tabletTop small{display:block;color:#ffc957;font-size:9px;letter-spacing:2px}
 .tabletTop strong{display:block;font-size:16px;letter-spacing:1px;margin-top:3px}
 .signal{font-size:8px;color:#6affc0}
-.tabletSub{margin:18px 0 9px;color:#8aa4ba;font-size:9px;letter-spacing:2px}
-.tablet button{display:block;width:100%;margin:7px 0;padding:11px 12px;text-align:left;border-radius:9px;border:1px solid #204b69;background:#091a2b;color:#e8f6ff;cursor:pointer;font-size:11px;letter-spacing:.5px;transition:.15s}
-.tablet button:hover:not(:disabled){border-color:#55c5ff;background:#103554;box-shadow:0 0 14px #1a9bd455}
+.tabletSub{margin:18px 0 9px;color:#9bb0bd;font-size:9px;letter-spacing:2px}
+.tablet button{display:block;width:100%;margin:7px 0;padding:11px 12px;text-align:left;border-radius:10px;border:1px solid #324d5b;background:linear-gradient(110deg,#101f2b,#14212a);color:#edf6fa;cursor:pointer;font-size:11px;letter-spacing:.5px;transition:.15s}
+.tablet button:hover:not(:disabled){border-color:#ffd16a;background:linear-gradient(110deg,#1d2b32,#342818);box-shadow:0 0 16px #d99a3855}
 .tablet button:disabled{opacity:.42;cursor:not-allowed}
-.tablet button b{display:inline-block;width:25px;color:#58c9ff}
-.tabletDivider{height:1px;background:#21465f;margin:15px 0}
+.tablet button b{display:inline-block;width:25px;color:#78d7e7}
+.tabletDivider{height:1px;background:linear-gradient(90deg,#d3a84f88,#587482,#d3a84f22);margin:15px 0}
 .exitBtn{border-color:#176d58!important;background:#073526!important}
 .exitBtn:not(:disabled){color:#7dffd0!important}
 .returnBtn{border-color:#2b5e83!important;background:#0b2439!important}
@@ -75,7 +75,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .loadingActions button{padding:10px 14px;border:1px solid #55c5ff;border-radius:8px;background:#0b2639;color:#eaf3ff;cursor:pointer}
 #startOverlay{pointer-events:auto}
 #startOverlay.startHidden{opacity:0;pointer-events:none}
-.tablet{width:min(310px,27vw);max-height:82vh;padding:16px;right:3%;background:linear-gradient(145deg,#071522f2,#0b1b2cf2)}
+.tablet{width:min(310px,27vw);max-height:82vh;padding:16px;right:3%}
 .tablet button{padding:9px 10px;margin:5px 0}
 #tabletStatus{margin-top:13px;color:#ffcf4a;font-size:9px;letter-spacing:1px;line-height:1.5}
 #aboutSelector{position:fixed;z-index:22;left:50%;top:50%;transform:translate(-50%,-100%);width:min(270px,25vw);margin:0;padding:14px;border:1px solid #65d9ff;border-radius:14px;background:linear-gradient(135deg,#07111df7,#11132bf7);box-shadow:inset 0 0 24px #1776a544,0 0 12px #35cfffaa,0 0 34px #087baf88,0 0 62px #087baf44;backdrop-filter:blur(8px);pointer-events:auto;animation:aboutSelectorGlow 2.4s ease-in-out infinite}
@@ -127,7 +127,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
  #controlsHint{display:none}
 }
 
-/* Touch D-pad for moving through the train on phones and tablets. */
+/* Touch D-pad for moving through the vehicle on phones and tablets. */
 .touchControls{display:grid;position:fixed;z-index:24;left:max(14px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));width:148px;height:190px;grid-template-columns:repeat(3,46px);grid-template-rows:46px 46px 38px 22px;gap:5px;align-items:center;justify-items:center;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
 .touchControls button{width:46px;height:46px;margin:0;padding:0;border:1px solid #63ceff;border-radius:13px;background:linear-gradient(145deg,#071b2bea,#0b3550eF);color:#e8f8ff;font-size:19px;font-weight:800;text-shadow:0 0 10px #55c5ff;box-shadow:inset 0 0 14px #167ba744,0 3px 15px #0009;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touchControls button:active,.touchControls button.pressed{transform:scale(.94);border-color:#c5f4ff;background:#12628a;box-shadow:0 0 20px #35cfffaa,inset 0 0 18px #35cfff66}

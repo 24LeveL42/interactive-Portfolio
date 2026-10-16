@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rajini Metro — Interactive Portfolio</title>
+<title>Rajini Portfolio — 3D Explorer</title>
 <link rel="stylesheet" href="style.css">
 <script type="importmap">
 {
@@ -14,29 +14,29 @@
 </script>
 </head>
 <body>
-<div id="loading"><div class="loader"></div><div id="loadingMessage">INITIALISING RAJINI METRO...</div><div class="loadingActions"><button id="continueBtn" hidden>CONTINUE WITH ORIGINAL CARRIAGE</button><button id="reloadBtn" hidden>RELOAD</button></div></div>
+<div id="loading"><div class="loader"></div><div id="loadingMessage">INITIALISING RAJINI PORTFOLIO...</div><div class="loadingActions"><button id="continueBtn" hidden>CONTINUE WITH BASIC VEHICLE</button><button id="reloadBtn" hidden>RELOAD</button></div></div>
 
 <div id="hud">
-  <div class="brand">RAJINI METRO <span>PORTFOLIO JOURNEY</span></div>
+  <div class="brand">RAJINI PORTFOLIO <span>3D EXPLORER</span></div>
   <div id="stationHud">READY</div>
 </div>
 
-<button id="journeyToggle" class="journeyToggle" type="button" aria-controls="tabletUI" aria-expanded="true" hidden>OPEN JOURNEY</button>
+<button id="journeyToggle" class="journeyToggle" type="button" aria-controls="tabletUI" aria-expanded="true" hidden>OPEN DESTINATIONS</button>
 
-<!-- The route tablet stays available throughout the journey. -->
+<!-- The vehicle destination panel stays available throughout the experience. -->
 <div id="tabletUI" class="tablet">
   <div class="tabletTop">
-    <div><small>RAJINI METRO</small><strong>PORTFOLIO JOURNEY</strong></div>
+    <div><small>RAJINI PORTFOLIO</small><strong>EXPLORE THE WORLD</strong></div>
     <div class="tabletActions"><div class="signal">● ONLINE</div><button id="journeyClose" class="panelClose" type="button" aria-label="Close portfolio journey panel" title="Close panel">×</button></div>
   </div>
-  <div class="tabletSub">SELECT A DESTINATION</div>
+  <div class="tabletSub">CHOOSE YOUR DESTINATION</div>
   <button data-station="about-me"><b>◉</b> ABOUT ME</button>
   <button data-station="3d-art"><b>◆</b> 3D ART</button>
   <button data-station="web-development"><b>▣</b> WEB DEVELOPMENT</button>
   <button data-station="kopi-boy"><b>◇</b> KOPI BOY</button>
   <button data-station="contact"><b>✉</b> CONTACT</button>
   <div class="tabletDivider"></div>
-  <div id="tabletStatus">CAR READY</div>
+  <div id="tabletStatus">VEHICLE READY</div>
 </div>
 
 <section id="aboutSelector" class="aboutSelector" hidden aria-label="About Me player selection">
@@ -51,9 +51,9 @@
 
 <div id="arrival" class="arrival hidden">
   <div class="arrivalBox">
-    <small>NEXT STOP</small>
+    <small>DESTINATION REACHED</small>
     <h1 id="arrivalTitle">ABOUT ME</h1>
-    <p>Car stopping...</p>
+    <p>Arriving at your destination...</p>
   </div>
 </div>
 
@@ -62,11 +62,11 @@
 
 <div id="startOverlay">
   <div class="startCard">
-    <div class="miniTrain">🏎️</div>
-    <h1>RAJINI METRO</h1>
-    <p>AN INTERACTIVE DIGITAL PORTFOLIO</p>
-    <button id="startBtn">ENTER CAR</button>
-    <small>Take the driver seat and explore Rajini's digital work.</small>
+  <div class="miniTrain">🚙</div>
+    <h1>RAJINI PORTFOLIO</h1>
+    <p>AN INTERACTIVE 3D EXPLORER</p>
+    <button id="startBtn">START EXPLORING</button>
+    <small>Take the driver’s seat and explore Rajini’s digital work.</small>
   </div>
 </div>
 
@@ -89,7 +89,7 @@
       const screen = document.getElementById("loading");
       const message = document.getElementById("loadingMessage");
       if (screen && message) {
-        message.textContent = "Rajini Metro hit a startup error. Reload the page; if it continues, check your internet connection.";
+        message.textContent = "Rajini Portfolio hit a startup error. Reload the page; if it continues, check your internet connection.";
         screen.classList.add("loadingError"); screen.style.display = "flex";
         document.getElementById("reloadBtn").hidden = false;
       }

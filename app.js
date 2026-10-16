@@ -413,8 +413,8 @@ function loadMonsterTruck() {
       minZ: -trainCarriageLength / 2 + .25, maxZ: trainCarriageLength / 2 - .25
     };
     // Place the driver view at the raised, forward position inside the cab.
-    const driverEyeHeight = Math.max(1.8, size.y * modelScale * .70);
-    fpvPosition.set(-.38, Math.min(size.y * modelScale * .88, driverEyeHeight + .3), -.92);
+    const driverEyeHeight = size.y * modelScale * .90;
+    fpvPosition.set(-.38, Math.min(size.y * modelScale * .94, driverEyeHeight), -.92);
     // The truck's nose points toward local -Z after the model alignment;
     // face the FPV through the windshield instead of toward the rear cabin.
     yaw = 0;
@@ -657,7 +657,7 @@ function loadCyberpunkEnvironment() {
 
 function updateCyberpunkEnvironment(dt) {
   if (!cyberpunkCityInstances.length) return;
-  if (traveling) cyberpunkCityScroll -= dt * 24;
+  if (traveling) cyberpunkCityScroll += dt * 24;
   const ringStart = -cyberpunkCityRingLength / 2;
   for (const item of cyberpunkCityInstances) {
     const wrapped = ((item.baseZ + cyberpunkCityScroll - ringStart) % cyberpunkCityRingLength + cyberpunkCityRingLength) % cyberpunkCityRingLength;
@@ -1194,12 +1194,12 @@ function updateFpvMovement(dt) {
 }
 
 function setTabletState() {
-  if (outsideStation) $("tabletStatus").textContent = `ON PLATFORM • ${selectedDestination?.title ?? "STATION"}`;
-  else if (travelPhase === "doorsClosingForTravel") $("tabletStatus").textContent = "PREPARING JOURNEY…";
-  else if (traveling) $("tabletStatus").textContent = `DRIVING TO ${selectedDestination?.title ?? "STATION"}`;
-  else if (travelPhase === "doorsOpening") $("tabletStatus").textContent = "ARRIVING AT STATION…";
-  else if (travelPhase === "arrived") $("tabletStatus").textContent = "AT STATION • STEP OUT WHEN READY";
-  else $("tabletStatus").textContent = "CAR READY";
+  if (outsideStation) $("tabletStatus").textContent = `AT DESTINATION • ${selectedDestination?.title ?? "STOP"}`;
+  else if (travelPhase === "doorsClosingForTravel") $("tabletStatus").textContent = "PREPARING TO DRIVE…";
+  else if (traveling) $("tabletStatus").textContent = `DRIVING TO ${selectedDestination?.title ?? "DESTINATION"}`;
+  else if (travelPhase === "doorsOpening") $("tabletStatus").textContent = "ARRIVING…";
+  else if (travelPhase === "arrived") $("tabletStatus").textContent = "DESTINATION REACHED • STEP OUT WHEN READY";
+  else $("tabletStatus").textContent = "VEHICLE READY";
   document.querySelectorAll("[data-station]").forEach(button => { button.disabled = traveling || outsideStation || travelPhase === "doorsClosing"; });
   updateAboutPlayerSelector();
 }
@@ -1387,7 +1387,7 @@ function animate() {
     setTabletState();
   }
   if (running && traveling && travelPhase === "travelling") {
-    outside.position.z = (outside.position.z - dt * 24) % 240;
+    outside.position.z = (outside.position.z + dt * 24) % 240;
     updateCyberpunkEnvironment(dt);
     scene.background.setHSL(.56, .18, .48 + .11 * Math.sin(now * 1.4));
     scene.fog.color.copy(scene.background);
@@ -1412,7 +1412,7 @@ function animate() {
 }
 
 async function initialize() {
-  setLoading("INITIALISING RAJINI METRO…");
+  setLoading("INITIALISING RAJINI PORTFOLIO…");
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -1435,7 +1435,7 @@ async function initialize() {
     animate();
   } catch (error) {
     console.error("Application initialization failed.", error);
-    showFatalError("Rajini Metro could not finish starting. Check the browser console for details.");
+    showFatalError("Rajini Portfolio could not finish starting. Check the browser console for details.");
   }
 }
 

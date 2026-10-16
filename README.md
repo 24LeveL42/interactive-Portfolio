@@ -1,4 +1,4 @@
-# Rajini Metro Portfolio
+# Rajini Portfolio — 3D Explorer
 
 A static Three.js portfolio experience. The current About Me player boards are 2.5x their previous size, and the selected character stands beside the board.
 
@@ -35,7 +35,7 @@ The supplied desk-top GLB includes the desktop screen and keyboard and is used o
 
 ## Journey panel
 
-Use the close button on the portfolio journey panel to hide it and the floating OPEN JOURNEY button to show it again. The open or closed choice is remembered in the browser.
+Use the close button on the vehicle destination panel to hide it and the floating OPEN DESTINATIONS button to show it again. The open or closed choice is remembered in the browser.
 
 ## Supplied sky texture
 
@@ -45,4 +45,4 @@ SKY HDR pp.hdr is used continuously as the exterior sky and reflection environme
 
 ## Monster truck
 
-The supplied Y-up `monster_truck.glb` replaces the MRT carriage and keeps the station route, destination picker, exterior journey, and station stops. The driver view is raised and moved forward within the cab. The truck has no doors, so there is no door control; the journey proceeds and station arrival is handled without a door animation. The supplied HDR sky remains visible throughout travel and at every station.
+The supplied Y-up `monster_truck.glb` is the portfolio vehicle. The driver camera starts raised in the cab and faces through the windshield. During travel, the exterior moves opposite the vehicle's forward direction so the drive reads correctly. Destination stops and station scenes remain part of the portfolio experience. The supplied HDR sky remains visible throughout travel and at every station.
