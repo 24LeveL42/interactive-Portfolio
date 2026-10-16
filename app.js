@@ -441,6 +441,8 @@ function prepareArtStationSpinners(model) {
   spinNodes.forEach((node, index) => {
     const parent = node.parent;
     if (!parent) return;
+    const authoredPosition = node.position.clone();
+    const authoredYaw = new THREE.Euler().setFromQuaternion(node.quaternion, "YXZ").y;
     node.geometry.computeBoundingBox();
     const geometryCenter = node.geometry.boundingBox.getCenter(new THREE.Vector3());
     node.updateWorldMatrix(true, false);
@@ -472,11 +474,40 @@ function prepareArtStationSpinners(model) {
     node.geometry.computeBoundingBox();
     node.geometry.computeBoundingSphere();
     const isCircle = /^circle/i.test(node.name);
-    const magnitude = /^circle/i.test(node.name) ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
+    node.position.set(0, 0, 0);
+    const magnitude = isCircle ? .12 + Math.random() * .12 : .07 + Math.random() * .08;
     const direction = Math.random() < .5 ? -1 : 1;
-    artSpinPivots.push({ pivot, node, isCircle, speed: direction * magnitude, phase: index * .37 });
+    artSpinPivots.push({
+      pivot, node, isCircle, authoredPosition, authoredYaw,
+      speed: direction * magnitude, phase: index * .37, elapsed: 0
+    });
   });
+  arrangeArtStationRow();
+  sizeArtStationDisplays(1);
   console.info(`Prepared ${artSpinPivots.length} 3D Art models and display circles for slow random-direction spins.`);
+}
+
+function arrangeArtStationRow() {
+  const figures = artSpinPivots.filter(spinner => !spinner.isCircle);
+  const circles = artSpinPivots.filter(spinner => spinner.isCircle);
+  const usedCircles = new Set();
+  const rowSpacing = 2.35;
+  figures.forEach((figure, index) => {
+    const circle = circles.find(candidate => !usedCircles.has(candidate)
+      && candidate.authoredPosition.distanceTo(figure.authoredPosition) < .002)
+      ?? circles.find(candidate => !usedCircles.has(candidate));
+    if (!circle) return;
+    usedCircles.add(circle);
+    const rowZ = (index - (figures.length - 1) / 2) * rowSpacing;
+    figure.pivot.position.set(0, 1.1, rowZ);
+    // All imported characters use +Z as their authored forward direction.
+    // Cancel their individual GLB yaw so the station's +90° facing turns +Z
+    // toward the truck (+X in world space).
+    figure.baseYaw = -figure.authoredYaw;
+    figure.pivot.rotation.set(0, figure.baseYaw, 0);
+    circle.pivot.position.set(0, 0, rowZ);
+    circle.pivot.rotation.y = 0;
+  });
 }
 
 function sizeArtStationDisplays(sceneScale) {
@@ -500,7 +531,14 @@ function sizeArtStationDisplays(sceneScale) {
 }
 
 function updateArtStationSpinners(dt) {
-  for (const spinner of artSpinPivots) spinner.pivot.rotation.y += spinner.speed * dt;
+  for (const spinner of artSpinPivots) {
+    if (spinner.isCircle) {
+      spinner.pivot.rotation.y += spinner.speed * dt;
+      continue;
+    }
+    spinner.elapsed += spinner.speed * dt;
+    spinner.pivot.rotation.y = spinner.baseYaw + Math.sin(spinner.elapsed + spinner.phase) * .08;
+  }
 }
 
 function loadArtInfoBoard(parent, displayOffset, requestId) {
@@ -544,7 +582,7 @@ function loadArtInfoBoard(parent, displayOffset, requestId) {
     const placement = new THREE.Group();
     placement.name = "3D Art information board (3x scale)";
     placement.rotation.y = Math.PI / 2;
-    placement.position.set(-(trainHalfWidth + displayOffset + 4.5), size.y * boardScale / 2 + .05, 0);
+    placement.position.set(-(trainHalfWidth + displayOffset + 4.5), size.y * boardScale / 2 + .05, -6.5);
     board.scale.setScalar(boardScale);
     board.position.copy(center).multiplyScalar(-boardScale);
     placement.add(board);
@@ -1078,8 +1116,8 @@ async function loadStationModel(destination) {
       const bounds = new THREE.Box3().setFromObject(model);
       const size = bounds.getSize(new THREE.Vector3());
       const center = bounds.getCenter(new THREE.Vector3());
-      const targetWidth = isArtStation ? 8.5 : destination.id === "web-development" ? 10 : 2.8;
-      const scale = targetWidth / Math.max(size.x, .001);
+      const targetWidth = destination.id === "web-development" ? 10 : 2.8;
+      const scale = isArtStation ? 1 : targetWidth / Math.max(size.x, .001);
       const placement = new THREE.Group();
       placement.name = `${destination.stationName} station model placement`;
       placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
@@ -1087,10 +1125,14 @@ async function loadStationModel(destination) {
       // visible from the vehicle.
       const platformOffset = isArtStation ? 10.5 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
-      placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
+      placement.position.set(
+        -(trainHalfWidth + platformOffset),
+        isArtStation ? .05 : size.y * scale / 2 + .05,
+        alongPlatform
+      );
       model.scale.setScalar(scale);
-      if (isArtStation) sizeArtStationDisplays(scale);
-      model.position.copy(center).multiplyScalar(-scale);
+      if (isArtStation) model.position.set(0, 0, 0);
+      else model.position.copy(center).multiplyScalar(-scale);
       placement.add(model);
       stationContent.add(placement);
       if (isArtStation) loadArtInfoBoard(stationContent, platformOffset, requestId);
