@@ -1,0 +1,1418 @@
+import * as THREE from "three";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+
+const $ = id => document.getElementById(id);
+const canvas = $("scene");
+canvas.tabIndex = 0;
+const loading = $("loading");
+const loadingMessage = $("loadingMessage");
+const destinations = [
+  { id: "about-me", title: "ABOUT ME", stationName: "About Me", description: "A little about Rajini", placeholderContent: "About Me station coming soon", modelPath: null, futureModelPath: "about.glb" },
+  { id: "3d-art", title: "3D ART", stationName: "3D Art", description: "Selected 3D work", placeholderContent: "Selected 3D work", modelPath: "mrt_station_board_3D.glb", futureModelPath: "3dart.glb" },
+  { id: "web-development", title: "WEB DEVELOPMENT", stationName: "Web Development", description: "Web projects and experiments", placeholderContent: "Web Development station coming soon", modelPath: "website_station_new.glb", futureModelPath: "web.glb" },
+  { id: "digital-marketing", title: "DIGITAL MARKETING", stationName: "Digital Marketing", description: "Digital marketing work", placeholderContent: "Digital Marketing station coming soon", modelPath: null, futureModelPath: "marketing.glb" },
+  { id: "kopi-boy", title: "KOPI BOY", stationName: "Kopi Boy", description: "The next big delivery platform is in the making", placeholderContent: "I’m building a faster, smarter way to connect people, riders and local businesses — one delivery at a time.", modelPath: null, futureModelPath: "kopi-boy.glb" },
+  { id: "contact", title: "CONTACT", stationName: "Contact", description: "Get in touch with Rajini", placeholderContent: "Contact station coming soon", modelPath: null, futureModelPath: "contact.glb" }
+];
+const aboutPlayers = [
+  { name: "CASUAL", model: "about_casual_animated.glb", card: "about_card_casual.png", accent: 0x35b8ff },
+  { name: "FITNESS", model: "about_fitness_animated.glb", card: "about_card_fitness.png", accent: 0xe65aff },
+  { name: "SAF WARRIOR", model: "about_army_animated.glb", card: "about_card_army.png", accent: 0x8eff59, facingOffset: Math.PI / 2 },
+  { name: "FUTURE VISION", model: "about_future_animated.glb", card: "about_card_future.png", accent: 0xda61ff }
+];
+const aboutProfileCardScale = 2.5;
+const aboutProfileCardWidth = 2.68 * aboutProfileCardScale;
+const aboutProfileCardHeight = 1.508 * aboutProfileCardScale;
+
+let renderer, scene, camera, clock, train, trainModelRoot, outside, station, stationContent;
+let aboutSelectionPairs = [], aboutSelectionIndex = 0, aboutSelectionMotion = null, aboutSelectionGeneration = 0;
+const aboutSelectionBaseZ = -0.5;
+let creatorStampsFloat = null;
+let kopiBoyFireworks = null, kopiBoyRider = null;
+let daySkyDome, nightSkyDome, worldHemisphereLight, worldKeyLight, stationNightMode = false;
+let cyberpunkTemplate = null, cyberpunkLoading = false;
+let cyberpunkCityInstances = [], cyberpunkCityScroll = 0, cyberpunkCityStep = 48, cyberpunkCityRingLength = 336;
+let partitionPanel = null, partitionBaseY = 0, partitionLift = 0, partitionWorldZ = -10.5;
+let partitionProgress = 0, partitionTarget = 0;
+let sideDoorPanels = [];
+let trainHalfWidth = 1.8;
+let assetsReady = 0, assetsRequired = 1;
+let running = false, traveling = false, outsideStation = false;
+let selectedDestination = null;
+const fpvPosition = new THREE.Vector3(0, 1.58, 1.35);
+let stationStopZ = 0;
+const pressedKeys = new Set();
+const activeTouchTurns = new Set();
+let fpvBounds = { minX: -2.1, maxX: 2.1, minZ: -19, maxZ: 19 };
+let trainCarriageLength = 18;
+let yaw = 0, pitch = 0, zoom = 72, dragging = false, lastX = 0, lastY = 0;
+let travelStart = 0, doorProgress = 0, doorTarget = 0;
+let travelPhase = "idle";
+let updateDoors = () => {};
+let updatePartition = () => {};
+let setDoorTarget = open => { doorTarget = open ? 1 : 0; };
+const CLOSED_LEFT = -.56, CLOSED_RIGHT = .56;
+
+function setLoading(message, error = false) {
+  loadingMessage.textContent = message;
+  loading.classList.toggle("loadingError", error);
+  loading.style.display = "flex";
+}
+
+function finishLoading() { loading.style.display = "none"; }
+function markAssetReady() {
+  assetsReady++;
+  if (assetsReady >= assetsRequired) finishLoading();
+}
+function showFatalError(message) {
+  setLoading(message, true);
+  const retry = $("reloadBtn");
+  retry.hidden = false;
+}
+
+const mats = {
+  floor: new THREE.MeshStandardMaterial({ color: 0xd8e0e5, metalness: .18, roughness: .55 }),
+  wall: new THREE.MeshStandardMaterial({ color: 0xeaf0f3, metalness: .16, roughness: .48 }),
+  ceiling: new THREE.MeshStandardMaterial({ color: 0xf3f6f8, metalness: .2, roughness: .42 }),
+  metal: new THREE.MeshStandardMaterial({ color: 0xaab8c2, metalness: .72, roughness: .25 }),
+  glow: new THREE.MeshStandardMaterial({ color: 0x8ce3ff, emissive: 0x32b7ff, emissiveIntensity: 2.6 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x445663, metalness: .38, roughness: .32 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xc4eaf7, transparent: true, opacity: .14, metalness: .02, roughness: .1, depthWrite: false }),
+  windowFrame: new THREE.MeshStandardMaterial({ color: 0xeaf2f6, metalness: .38, roughness: .28 }),
+  platform: new THREE.MeshStandardMaterial({ color: 0xb5c0c6, metalness: .23, roughness: .56 }),
+  seat: new THREE.MeshStandardMaterial({ color: 0x3a718b, metalness: .22, roughness: .4 })
+};
+
+function box(w, h, d, mat, x, y, z, parent = train) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
+function createSkyDome() {
+  const skyCanvas = document.createElement("canvas");
+  skyCanvas.width = 1536; skyCanvas.height = 768;
+  const ctx = skyCanvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, skyCanvas.height);
+  gradient.addColorStop(0, "#3979a8");
+  gradient.addColorStop(.34, "#76b5dc");
+  gradient.addColorStop(.53, "#dff4ff");
+  gradient.addColorStop(1, "#91c4df");
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
+
+  // Soft cloud banks are painted into the procedural equirectangular sky texture.
+  for (let i = 0; i < 32; i++) {
+    const x = 35 + Math.random() * (skyCanvas.width - 70);
+    const y = 270 + Math.random() * 150;
+    const cloudWidth = 48 + Math.random() * 95;
+    const puffs = 3 + Math.floor(Math.random() * 4);
+    for (let puff = 0; puff < puffs; puff++) {
+      const px = x + (Math.random() - .5) * cloudWidth;
+      const py = y + (Math.random() - .5) * 24;
+      const radius = 12 + Math.random() * 28;
+      const cloud = ctx.createRadialGradient(px, py, 2, px, py, radius);
+      cloud.addColorStop(0, "rgba(255,255,255,.92)");
+      cloud.addColorStop(.56, "rgba(250,253,255,.68)");
+      cloud.addColorStop(1, "rgba(245,252,255,0)");
+      ctx.fillStyle = cloud;
+      ctx.beginPath(); ctx.ellipse(px, py, radius * 1.35, radius * .68, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(skyCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(190, 48, 32),
+    new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false, fog: false })
+  );
+  dome.name = "Procedural sky and cloud dome";
+  dome.renderOrder = -1;
+  return dome;
+}
+
+function createNightSkyDome() {
+  const skyCanvas = document.createElement("canvas");
+  skyCanvas.width = 1536; skyCanvas.height = 768;
+  const ctx = skyCanvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, skyCanvas.height);
+  gradient.addColorStop(0, "#030714");
+  gradient.addColorStop(.48, "#101d3d");
+  gradient.addColorStop(.76, "#242448");
+  gradient.addColorStop(1, "#101522");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
+  for (let i = 0; i < 220; i++) {
+    const x = Math.random() * skyCanvas.width, y = Math.random() * 520;
+    const radius = Math.random() < .1 ? 1.8 : .65 + Math.random() * .65;
+    ctx.fillStyle = `rgba(210,232,255,${.35 + Math.random() * .6})`;
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+  }
+  const moonGlow = ctx.createRadialGradient(1260, 160, 8, 1260, 160, 115);
+  moonGlow.addColorStop(0, "rgba(154,213,255,.46)");
+  moonGlow.addColorStop(1, "rgba(62,132,200,0)");
+  ctx.fillStyle = moonGlow; ctx.fillRect(1135, 35, 250, 250);
+  ctx.fillStyle = "#d9eeff";
+  ctx.beginPath(); ctx.arc(1260, 160, 32, 0, Math.PI * 2); ctx.fill();
+
+  const texture = new THREE.CanvasTexture(skyCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(190, 48, 32),
+    new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false, fog: false })
+  );
+  dome.name = "Procedural night sky with stars and moon";
+  dome.renderOrder = -1;
+  dome.visible = false;
+  return dome;
+}
+
+function setStationNightMode(active) {
+  if (stationNightMode === active) return;
+  stationNightMode = active;
+  if (daySkyDome) daySkyDome.visible = !active;
+  if (nightSkyDome) nightSkyDome.visible = active;
+  const skyColor = active ? 0x081226 : 0x9fb8c9;
+  scene.background.set(skyColor);
+  scene.fog.color.set(skyColor);
+  if (worldHemisphereLight) worldHemisphereLight.intensity = active ? 1.25 : 2.3;
+  if (worldKeyLight) worldKeyLight.intensity = active ? 1.05 : 2.4;
+  if (outside) outside.traverse(node => {
+    if (!node.isMesh || node.name !== "Repeating grass ground") return;
+    const material = node.material;
+    material.userData.stationDayColor ??= material.color.clone();
+    material.color.copy(active ? new THREE.Color(0x263039) : material.userData.stationDayColor);
+  });
+  if (stationContent) stationContent.traverse(node => {
+    if (!node.isMesh) return;
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    for (const material of materials) {
+      updateStationNightMaterial(material, active);
+    }
+  });
+}
+
+function updateStationNightMaterial(material, active) {
+  const state = material?.userData?.stationNight;
+  if (!state || !material.emissive) return;
+  if (active) {
+    // Preserve GLB-authored emissive maps (especially the Web Development
+    // model's neon surfaces) and use the albedo map only when no emissive map exists.
+    material.emissiveMap = state.originalMap || state.albedoMap;
+    material.emissive.set(0xffffff);
+    material.emissiveIntensity = state.originalMap
+      ? Math.min(state.originalIntensity, .7)
+      : .9;
+  } else {
+    material.emissiveMap = state.originalMap;
+    material.emissive.copy(state.originalColor);
+    material.emissiveIntensity = state.originalIntensity;
+  }
+  material.needsUpdate = true;
+}
+
+function prepareStationNightMaterial(material, map = material?.map) {
+  if (!material?.emissive) return;
+  const state = material.userData.stationNight ??= {
+    originalMap: material.emissiveMap ?? null,
+    originalColor: material.emissive.clone(),
+    originalIntensity: material.emissiveIntensity,
+    albedoMap: map ?? null
+  };
+  if (map) state.albedoMap = map;
+  updateStationNightMaterial(material, stationNightMode);
+}
+
+function buildScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fb8c9);
+  scene.fog = new THREE.Fog(0x9fb8c9, 35, 150);
+  camera = new THREE.PerspectiveCamera(zoom, innerWidth / innerHeight, .05, 220);
+  camera.position.set(0, 1.58, 1.35);
+  clock = new THREE.Clock();
+  train = new THREE.Group(); train.name = "MRT carriage";
+  outside = new THREE.Group(); outside.name = "Moving exterior";
+  daySkyDome = createSkyDome();
+  nightSkyDome = createNightSkyDome();
+  scene.add(daySkyDome, nightSkyDome, train, outside);
+
+  box(6, .12, 42, mats.floor, 0, 0, 0);
+  // Split side walls around the glazing so the windows are genuine openings.
+  for (const side of [-1, 1]) {
+    box(.12, 1.0, 42, mats.wall, side * 3.05, .5, 0);
+    box(.12, .36, 42, mats.wall, side * 3.05, 2.82, 0);
+  }
+  box(6, .12, 42, mats.ceiling, 0, 3.05, 0);
+  for (let z = -18.5; z <= 18.5; z += 4.2) {
+    for (const side of [-1, 1]) {
+      const wallFace = side * 2.978;
+      box(.045, 1.54, 3.9, mats.glass, wallFace, 1.82, z);
+      box(.07, .08, 3.98, mats.windowFrame, side * 2.965, 1.04, z);
+      box(.07, .08, 3.98, mats.windowFrame, side * 2.965, 2.60, z);
+      box(.07, 1.62, .08, mats.windowFrame, side * 2.965, 1.82, z - 2.0);
+      box(.07, 1.62, .08, mats.windowFrame, side * 2.965, 1.82, z + 2.0);
+      box(.035, .035, 3.84, mats.glow, side * 2.94, 1.09, z);
+    }
+  }
+  for (let z = -19; z <= 19; z += 3.2) {
+    box(.3, .06, 2.8, mats.glow, -1.15, 2.91, z);
+    box(.3, .06, 2.8, mats.glow, 1.15, 2.91, z);
+    box(5.1, .035, .07, mats.glow, 0, 2.65, z);
+  }
+  for (let z = -18; z <= 18; z += 4.5) {
+    box(.04, .08, 2.9, mats.glow, -2.94, 2.34, z);
+    box(.04, .08, 2.9, mats.glow, 2.94, 2.34, z);
+  }
+
+  const seatGroup = new THREE.Group(); seatGroup.name = "USER_SEATS"; train.add(seatGroup);
+  const seatPlacements = [];
+  for (let z = -18; z <= 18; z += 2.8) { seatPlacements.push([-2.35, z, false]); seatPlacements.push([2.35, z, true]); }
+  function fallbackSeat(x, z, flip) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); seatGroup.add(g);
+    box(1.15, .16, .48, mats.seat, 0, .63, 0, g);
+    box(1.15, .72, .13, mats.seat, 0, 1.02, flip ? -.22 : .22, g);
+    box(.1, .56, .55, mats.metal, -.48, .56, 0, g);
+    box(.1, .56, .55, mats.metal, .48, .56, 0, g);
+  }
+  function useFallbackSeats() {
+    seatGroup.clear();
+    seatPlacements.forEach(p => fallbackSeat(p[0], p[1], p[2]));
+  }
+
+  box(2.5, 2.3, .14, mats.dark, 0, 1.45, -20.65);
+  box(2.5, 2.3, .14, mats.dark, 0, 1.45, 20.65);
+  box(.07, 2.2, .2, mats.glow, -1.3, 1.45, -20.77);
+  box(.07, 2.2, .2, mats.glow, 1.3, 1.45, -20.77);
+  box(1.1, 2.05, .18, mats.glass, CLOSED_LEFT, 1.45, 20.78);
+  box(1.1, 2.05, .18, mats.glass, CLOSED_RIGHT, 1.45, 20.78);
+  const doorL = box(1.1, 2.05, .18, mats.glass, CLOSED_LEFT, 1.45, -20.78);
+  const doorR = box(1.1, 2.05, .18, mats.glass, CLOSED_RIGHT, 1.45, -20.78);
+  const closedDoorY = 1.45, doorLift = 2.12;
+  setDoorTarget = open => { doorTarget = open ? 1 : 0; };
+  updateDoors = dt => {
+    doorProgress = THREE.MathUtils.damp(doorProgress, doorTarget, 3.2, dt);
+    doorL.position.x = CLOSED_LEFT;
+    doorR.position.x = CLOSED_RIGHT;
+    doorL.position.y = closedDoorY + doorLift * doorProgress;
+    doorR.position.y = closedDoorY + doorLift * doorProgress;
+    sideDoorPanels.forEach(({ group, baseX, direction, travel }) => {
+      group.position.x = baseX + direction * travel * doorProgress;
+    });
+  };
+
+  // The interior divider sits between the two fallback carriage halves.
+  const fallbackDividerZ = -10.5, passageWidth = 1.55, dividerHeight = 2.35;
+  const wingWidth = (5.6 - passageWidth) / 2;
+  for (const side of [-1, 1]) {
+    box(wingWidth, dividerHeight, .14, mats.dark, side * (passageWidth + wingWidth) / 2, dividerHeight / 2, fallbackDividerZ, train);
+  }
+  box(5.6, .28, .14, mats.dark, 0, dividerHeight + .14, fallbackDividerZ, train);
+  partitionPanel = new THREE.Group();
+  partitionPanel.position.set(0, .05, fallbackDividerZ);
+  train.add(partitionPanel);
+  box(passageWidth, dividerHeight - .1, .12, mats.windowFrame, 0, (dividerHeight - .1) / 2, 0, partitionPanel);
+  box(passageWidth * .78, dividerHeight * .42, .035, mats.glass, 0, dividerHeight * .53, .078, partitionPanel);
+  partitionBaseY = partitionPanel.position.y;
+  partitionLift = dividerHeight + .3;
+  partitionWorldZ = fallbackDividerZ;
+  updatePartition = dt => {
+    const delta = partitionTarget - partitionProgress, step = dt * 1.8;
+    partitionProgress = Math.abs(delta) <= step ? partitionTarget : partitionProgress + Math.sign(delta) * step;
+    partitionPanel.position.y = partitionBaseY + partitionLift * partitionProgress;
+  };
+  const tabletProp = new THREE.Group(); tabletProp.position.set(1.55, 1.25, 1); tabletProp.rotation.y = -.22; train.add(tabletProp);
+  box(1.55, 1.1, .12, mats.dark, 0, 0, 0, tabletProp);
+  box(1.35, .88, .03, mats.glow, 0, 0, .07, tabletProp);
+  box(1.43, .08, .12, mats.metal, 0, -.62, 0, tabletProp);
+
+  // A repeating grass tile keeps the exterior grounded as the train moves.
+  const grass = new THREE.MeshStandardMaterial({ color: 0x66845d, roughness: 1 });
+  const ballast = new THREE.MeshStandardMaterial({ color: 0x4f5960, roughness: .96 });
+  const sleeper = new THREE.MeshStandardMaterial({ color: 0x725d4b, roughness: .9 });
+  const rail = new THREE.MeshStandardMaterial({ color: 0xb9c6cb, metalness: .8, roughness: .24 });
+  const groundGeometry = new THREE.PlaneGeometry(100, 240);
+  groundGeometry.rotateX(-Math.PI / 2);
+  for (const z of [-480, -240, 0, 240]) {
+    const ground = new THREE.Mesh(groundGeometry, grass);
+    ground.position.set(0, -.12, z);
+    ground.name = "Repeating grass ground";
+    outside.add(ground);
+  }
+  // The carriage now has a closed cabin floor; keep the exterior free of exposed track geometry.
+  for (let z = -90; z < 90; z += 5) {
+    box(.12, .12, 1.4, mats.glow, -5.3, 2.4, z, outside);
+    box(.12, .12, 1.4, mats.glow, 5.3, 2.4, z, outside);
+  }
+  worldHemisphereLight = new THREE.HemisphereLight(0xf2fbff, 0x718393, 2.3); scene.add(worldHemisphereLight);
+  worldKeyLight = new THREE.DirectionalLight(0xffffff, 2.4); worldKeyLight.position.set(0, 8, 5); scene.add(worldKeyLight);
+  const fillL = new THREE.PointLight(0x8bdbff, 4.5, 18); fillL.position.set(-2.2, 2.3, 2); train.add(fillL);
+  const fillR = new THREE.PointLight(0x8bdbff, 4.5, 18); fillR.position.set(2.2, 2.3, 2); train.add(fillR);
+
+  station = new THREE.Group(); station.name = "Station placeholder (replaceable)"; station.position.set(0, 0, -9.5); outside.add(station);
+  stationContent = new THREE.Group(); station.add(stationContent);
+  buildPlaceholderStation(stationContent);
+  station.visible = false;
+  loadCyberpunkEnvironment();
+  loadUserTrainInterior(useFallbackSeats);
+  return { seatGroup, fallbackSeat, doorL, doorR, updateDoors, setDoorTarget };
+}
+
+function loadUserTrainInterior(useFallbackSeats) {
+  const loader = new GLTFLoader();
+  loader.load("mrt_new_4.glb", gltf => {
+    const car = gltf.scene;
+    // Keep the supplied model shell visible; don't layer a second cabin over it.
+    const embeddedCarShell = car.children.find(node => node.name === "Cube.001");
+    if (embeddedCarShell) embeddedCarShell.visible = true;
+    // Animate the door meshes from the supplied GLB itself. Keep their
+    // materials and geometry untouched so the user's original doors remain.
+    const doorParts = [];
+    // GLTFLoader strips dots from exported Blender names, so accept both the
+    // source names and Three.js's normalized runtime names.
+    const sourceDoorNode = /^tripo_node_06542f92\.?0(?:1[3-9]|2[0-5])$/;
+    const sourceDoorGeometry = /^tripo_mesh_06542f92\.?0(?:25|29|30|31|34|35|39|40|48|50|51|52|53)(?:_\d+)?$/;
+    car.traverse(node => {
+      if (sourceDoorNode.test(node.name) || sourceDoorGeometry.test(node.geometry?.name ?? "")) doorParts.push(node);
+    });
+    const doorPivots = [];
+    const nodeId = node => node.name.replaceAll(".", "").match(/tripo_node_06542f920(\d{2})$/)?.[1];
+    const leafDefinitions = [
+      // MRT new 4 has four independently-originated two-leaf exits. The
+      // smaller-X leaf moves left and the larger-X leaf moves right.
+      { ids: ["15"], direction: -1, label: "Exit 1 left leaf" },
+      { ids: ["16"], direction: 1, label: "Exit 1 right leaf" },
+      { ids: ["17"], direction: -1, label: "Exit 2 left leaf" },
+      { ids: ["18"], direction: 1, label: "Exit 2 right leaf" },
+      { ids: ["20"], direction: -1, label: "Exit 3 left leaf" },
+      { ids: ["23"], direction: 1, label: "Exit 3 right leaf" },
+      { ids: ["25"], direction: -1, label: "Exit 4 left leaf" },
+      { ids: ["24"], direction: 1, label: "Exit 4 right leaf" }
+    ];
+    const assignedDoorParts = new Set();
+    const makeDoorPivot = (parts, direction, label) => {
+      if (!parts.length) return;
+      const anchor = parts[0];
+      const parent = anchor.parent;
+      const pivot = new THREE.Group();
+      pivot.name = `Animated ${label}`;
+      pivot.position.copy(anchor.position);
+      pivot.quaternion.copy(anchor.quaternion);
+      pivot.scale.copy(anchor.scale);
+      pivot.userData.mrtSideDoor = true;
+      parent.add(pivot);
+      const inversePivot = new THREE.Matrix4().compose(pivot.position, pivot.quaternion, pivot.scale).invert();
+      for (const part of parts) {
+        part.updateMatrix();
+        const relative = inversePivot.clone().multiply(part.matrix);
+        part.removeFromParent();
+        pivot.add(part);
+        relative.decompose(part.position, part.quaternion, part.scale);
+      }
+      pivot.userData.slideDirection = direction;
+      // Move each leaf by its own width, measured from this GLB's corrected
+      // origin and scale. This clears the center while preserving its closed fit.
+      const localBounds = new THREE.Box3().makeEmpty();
+      const includeLeafGeometry = (object, parentMatrix) => {
+        object.updateMatrix();
+        const relativeMatrix = parentMatrix.clone().multiply(object.matrix);
+        if (object.geometry) {
+          object.geometry.computeBoundingBox();
+          if (object.geometry.boundingBox) {
+            localBounds.union(object.geometry.boundingBox.clone().applyMatrix4(relativeMatrix));
+          }
+        }
+        object.children.forEach(child => includeLeafGeometry(child, relativeMatrix));
+      };
+      includeLeafGeometry(pivot, new THREE.Matrix4());
+      const leafWidth = localBounds.isEmpty() ? .3 : localBounds.getSize(new THREE.Vector3()).x;
+      pivot.userData.slideDistance = Math.max(.25, leafWidth * 1.05);
+      doorPivots.push(pivot);
+    };
+    for (const leaf of leafDefinitions) {
+      const parts = doorParts.filter(part => leaf.ids.includes(nodeId(part)));
+      parts.forEach(part => assignedDoorParts.add(part));
+      makeDoorPivot(parts, leaf.direction, leaf.label);
+    }
+    // Keep any newly exported door meshes animatable even if their node IDs
+    // change; pair them by the model's existing transform and send them out.
+    const remainingDoorParts = doorParts.filter(part => !assignedDoorParts.has(part));
+    const fallbackDoorSets = new Map();
+    for (const part of remainingDoorParts) {
+      const key = `${Math.round(part.position.x * 10)}:${Math.round(part.position.z * 10)}`;
+      if (!fallbackDoorSets.has(key)) fallbackDoorSets.set(key, []);
+      fallbackDoorSets.get(key).push(part);
+    }
+    for (const [key, parts] of fallbackDoorSets) {
+      makeDoorPivot(parts, parts[0].position.x < 0 ? -1 : 1, `side door ${key}`);
+    }
+    const bounds = new THREE.Box3().setFromObject(car);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    // Asset inspection: local X is the carriage axis and local Y is up.
+    // Rotate X onto the app's Z route and set the car's measured height to 2.75 m.
+    car.position.x -= center.x;
+    car.position.z -= center.z;
+    trainModelRoot = new THREE.Group();
+    trainModelRoot.name = "User train interior GLB";
+    trainModelRoot.rotation.y = Math.PI / 2;
+    const modelScale = 2.75 / (size.y || 1);
+    trainModelRoot.scale.setScalar(modelScale);
+    trainModelRoot.add(car);
+    scene.add(trainModelRoot);
+
+    // Add a matching carriage in line with the first and open a controllable
+    // passage at the connection between them.
+    const secondCarriage = car.clone(true);
+    secondCarriage.name = "Second MRT carriage";
+    secondCarriage.position.x += size.x;
+    trainModelRoot.add(secondCarriage);
+    trainCarriageLength = size.x * modelScale;
+    const walkHalfWidth = Math.min(2.1, size.z * modelScale * .32);
+    fpvBounds = {
+      minX: -walkHalfWidth, maxX: walkHalfWidth,
+      minZ: -trainCarriageLength * 1.5 + 1.15,
+      maxZ: trainCarriageLength * .5 - 1.15
+    };
+    trainModelRoot.updateMatrixWorld(true);
+    // Keep the supplied carriage interior intact. The source GLB already
+    // contains its floor and partition; do not cover either with substitutes.
+
+    // Use the imported door assemblies directly. These are the four modeled
+    // side doors, with the panes and door bodies attached to the same pivot.
+    trainHalfWidth = size.z * modelScale / 2;
+    sideDoorPanels = [];
+    for (const carriage of [car, secondCarriage]) {
+      carriage.traverse(node => {
+        if (node.userData.mrtSideDoor) {
+          const baseX = node.position.x;
+          const localCenter = node.getWorldPosition(new THREE.Vector3());
+          sideDoorPanels.push({
+            group: node,
+            baseX,
+            direction: node.userData.slideDirection,
+            travel: node.userData.slideDistance,
+            side: Math.sign(localCenter.x),
+            worldX: localCenter.x,
+            // getWorldPosition is already in the same axes used by the FPV.
+            // The root's local Z is the carriage's side axis, not route Z.
+            worldZ: localCenter.z
+          });
+        }
+      });
+    }
+    // Keep every original door mesh visible and move only its assembly pivot.
+    sideDoorPanels.forEach(({ group, baseX, direction, travel }) => {
+      group.position.x = baseX + direction * travel * doorProgress;
+    });
+
+    train.visible = false;
+    console.info("MRT train GLB loaded with", sideDoorPanels.length, "animated original side-door assemblies.", size);
+    markAssetReady();
+  }, undefined, error => {
+    console.error("Train interior GLB failed; using the procedural carriage.", error);
+    useFallbackSeats();
+    setLoading("Train model unavailable. A fallback carriage is ready; you can still enter.", true);
+    $("continueBtn").hidden = false;
+    markAssetReady();
+  });
+}
+
+function buildPlaceholderStation(parent) {
+  parent.clear();
+  const add = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent.add(m); return m; };
+  const platformMaterial = new THREE.MeshStandardMaterial({ color: 0x8e9da4, roughness: .82, metalness: .12 });
+  const safetyMaterial = new THREE.MeshStandardMaterial({ color: 0xf2c94c, emissive: 0x6c4a08, emissiveIntensity: .28, roughness: .58 });
+  const platformCenterX = -(trainHalfWidth + 2.55);
+  add(5.1, .14, 18, platformMaterial, platformCenterX, -.07, 0);
+  add(.15, .035, 18, safetyMaterial, -(trainHalfWidth + .12), .015, 0);
+
+  const signCanvas = document.createElement("canvas");
+  signCanvas.width = 1024; signCanvas.height = 256;
+  const ctx = signCanvas.getContext("2d");
+  ctx.fillStyle = "#09263a"; ctx.fillRect(0, 0, signCanvas.width, signCanvas.height);
+  ctx.fillStyle = "#29c5ef"; ctx.fillRect(0, 0, 18, signCanvas.height);
+  ctx.fillStyle = "#effaff"; ctx.font = "700 70px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(`${selectedDestination?.stationName ?? "RAJINI METRO"} STATION`, 530, 104, 900);
+  ctx.fillStyle = "#71d8f4"; ctx.font = "600 30px Arial";
+  ctx.fillText("RAJINI METRO • PLATFORM 1", 530, 194, 900);
+  const signTexture = new THREE.CanvasTexture(signCanvas);
+  signTexture.colorSpace = THREE.SRGBColorSpace;
+  const signMaterial = new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.DoubleSide });
+  const signPost = add(.13, 1.02, 2.8, mats.dark, -(trainHalfWidth + 1.25), 2.45, 0);
+  signPost.name = "Placeholder station sign post";
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.7, .78), signMaterial);
+  sign.name = "Destination station sign";
+  sign.rotation.y = Math.PI / 2;
+  sign.position.set(-(trainHalfWidth + .68), 2.45, 0);
+  parent.add(sign);
+}
+
+function withCyberpunkTemplate(callback) {
+  if (cyberpunkTemplate) { callback(cyberpunkTemplate); return; }
+  if (!cyberpunkLoading) {
+    cyberpunkLoading = true;
+    new GLTFLoader().load("cyberpunk_station.glb", gltf => {
+      cyberpunkTemplate = gltf.scene;
+      cyberpunkLoading = false;
+      callback(cyberpunkTemplate);
+    }, undefined, error => {
+      cyberpunkLoading = false;
+      console.warn("Could not load the supplied cyberpunk station/building model.", error);
+      callback(null);
+    });
+    return;
+  }
+  const waitForTemplate = () => {
+    if (cyberpunkTemplate) callback(cyberpunkTemplate);
+    else if (!cyberpunkLoading) callback(null);
+    else requestAnimationFrame(waitForTemplate);
+  };
+  waitForTemplate();
+}
+
+function makeCyberpunkModule(template, targetHeight = 16) {
+  const model = template.clone(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const scale = targetHeight / Math.max(size.y, .001);
+  model.scale.multiplyScalar(scale);
+  model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+  const module = new THREE.Group();
+  module.name = "Cyberpunk station building module";
+  module.add(model);
+  return { module, width: size.x * scale, depth: size.z * scale, height: size.y * scale };
+}
+
+function loadCyberpunkEnvironment() {
+  withCyberpunkTemplate(template => {
+    if (!template) return;
+    const { module, width, depth } = makeCyberpunkModule(template, 16);
+    const repeatCount = Math.max(4, Math.round(240 / Math.max(depth, 1)));
+    cyberpunkCityStep = 240 / repeatCount;
+    cyberpunkCityRingLength = cyberpunkCityStep * 7;
+    const city = new THREE.Group();
+    city.name = "Repeating cyberpunk buildings outside the train";
+    scene.add(city);
+    // The exterior can finish loading before the imported carriage does, so
+    // use a conservative width until trainHalfWidth has its measured value.
+    const sideOffset = Math.max(trainHalfWidth, 3) + width / 2 + 5;
+    for (const side of [-1, 1]) {
+      for (let slot = -3; slot <= 3; slot++) {
+        const building = module.clone(true);
+        building.name = `Cyberpunk exterior building ${side < 0 ? "left" : "right"} ${slot + 4}`;
+        building.position.set(side * sideOffset, 0, slot * cyberpunkCityStep);
+        if (side > 0) building.rotation.y = Math.PI;
+        city.add(building);
+        cyberpunkCityInstances.push({ building, baseZ: slot * cyberpunkCityStep });
+      }
+    }
+    console.info(`Loaded and repeated the cyberpunk building model outside the carriage (${cyberpunkCityInstances.length} instances).`);
+  });
+}
+
+function updateCyberpunkEnvironment(dt) {
+  if (!cyberpunkCityInstances.length) return;
+  if (traveling) cyberpunkCityScroll += dt * 24;
+  const ringStart = -cyberpunkCityRingLength / 2;
+  for (const item of cyberpunkCityInstances) {
+    const wrapped = ((item.baseZ + cyberpunkCityScroll - ringStart) % cyberpunkCityRingLength + cyberpunkCityRingLength) % cyberpunkCityRingLength;
+    item.building.position.z = ringStart + wrapped;
+  }
+}
+
+function loadStationBuilding(parent) {
+  withCyberpunkTemplate(template => {
+    if (!template) return;
+    const { module, depth } = makeCyberpunkModule(template, 14);
+    const landmark = new THREE.Group();
+    landmark.name = "Cyberpunk landmark beyond the 3D Art sign board";
+    landmark.rotation.y = Math.PI / 2;
+    // Keep the imported station sign and its view line clear; the new landmark
+    // sits farther down the platform with an open gap between the two models.
+    landmark.position.set(-(trainHalfWidth + depth / 2 + 8), 0, 0);
+    landmark.add(module);
+    parent.add(landmark);
+    console.info("Loaded the cyberpunk station landmark beyond the unchanged 3D Art sign board.");
+  });
+}
+
+function loadCreatorStamps(parent) {
+  creatorStampsFloat = null;
+  new GLTFLoader().load("creator_stamps.glb", gltf => {
+    const model = gltf.scene;
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const scale = 3.8 / Math.max(size.x, size.y, size.z, .001);
+    model.scale.setScalar(scale);
+    model.position.copy(center).multiplyScalar(-scale);
+    const facingTrain = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    model.children.slice().forEach((part, index) => {
+      const pivot = new THREE.Group();
+      pivot.name = `Creator stamp ${index + 1} float pivot`;
+      pivot.position.copy(part.position);
+      pivot.quaternion.copy(part.quaternion).premultiply(facingTrain);
+      pivot.scale.copy(part.scale);
+      part.position.set(0, 0, 0);
+      part.quaternion.identity();
+      part.scale.set(1, 1, 1);
+      model.remove(part);
+      pivot.add(part);
+      model.add(pivot);
+    });
+    const pieces = [];
+    const clusters = [
+      { z: -4.1, x: .15, y: -.05 },
+      { z: 4.2, x: 0, y: 0 },
+      { z: 7.7, x: -.2, y: .12 }
+    ];
+    let texturedMeshes = 0;
+    clusters.forEach((layout, clusterIndex) => {
+      const cluster = new THREE.Group();
+      cluster.name = `Creator stamps floating cluster ${clusterIndex + 1}`;
+      cluster.position.set(-(trainHalfWidth + 5.1) + layout.x, 3.45 + layout.y, layout.z);
+      const instance = clusterIndex === 0 ? model : model.clone(true);
+      cluster.add(instance);
+      parent.add(cluster);
+      instance.traverse(node => {
+        if (node.isMesh && (Array.isArray(node.material) ? node.material : [node.material]).some(material => material?.map)) texturedMeshes++;
+        if (!node.name.endsWith("float pivot")) return;
+        pieces.push({
+          pivot: node,
+          base: node.position.clone(),
+          phase: Math.random() * Math.PI * 2,
+          speed: .2 + Math.random() * .2,
+          xDrift: .32 + Math.random() * .22,
+          yDrift: .13 + Math.random() * .1,
+          zDrift: .38 + Math.random() * .25
+        });
+      });
+    });
+    creatorStampsFloat = { items: pieces, scale };
+    console.info(`Loaded ${clusters.length} creator-stamp clusters (${pieces.length} independently drifting pieces, ${texturedMeshes} textured meshes); all face the train.`);
+  }, undefined, error => {
+    console.warn("Could not load creator stamps model; station scene remains available.", error);
+  });
+}
+
+function addKopiBoyFireworks(parent) {
+  const burstCount = 7, particlesPerBurst = 38, total = burstCount * particlesPerBurst;
+  const positions = new Float32Array(total * 3), colors = new Float32Array(total * 3);
+  const bursts = [];
+  const palette = [0x43eaff, 0xff53cb, 0xffdb4b, 0x71ff9a, 0x9b70ff, 0xff7e43, 0x65a7ff];
+  for (let burstIndex = 0; burstIndex < burstCount; burstIndex++) {
+    const origin = new THREE.Vector3(-(trainHalfWidth + 8.2 + Math.random() * 3), 4 + Math.random() * 3.2, -9 + Math.random() * 18);
+    const color = new THREE.Color(palette[burstIndex]);
+    const directions = [];
+    for (let p = 0; p < particlesPerBurst; p++) {
+      const y = Math.random() * 2 - 1, angle = Math.random() * Math.PI * 2;
+      const radius = Math.sqrt(1 - y * y);
+      directions.push(new THREE.Vector3(Math.cos(angle) * radius, y, Math.sin(angle) * radius));
+      const i = (burstIndex * particlesPerBurst + p) * 3;
+      const tint = color.clone().offsetHSL((Math.random() - .5) * .12, 0, (Math.random() - .5) * .12);
+      colors[i] = tint.r; colors[i + 1] = tint.g; colors[i + 2] = tint.b;
+    }
+    bursts.push({ origin, directions, offset: burstIndex * .57, period: 4.1, lifetime: 1.55, speed: 2.2 + Math.random() * .8 });
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const points = new THREE.Points(geometry, new THREE.PointsMaterial({
+    size: .19, sizeAttenuation: true, vertexColors: true, transparent: true,
+    opacity: .94, depthWrite: false, blending: THREE.AdditiveBlending
+  }));
+  points.name = "Colorful Kopi Boy celebration fireworks";
+  points.frustumCulled = false;
+  parent.add(points);
+  kopiBoyFireworks = { points, bursts, particlesPerBurst, baseColors: colors.slice() };
+}
+
+function loadKopiBoyStation(parent, requestId) {
+  kopiBoyRider = null;
+  addKopiBoyFireworks(parent);
+
+  const desktop = new THREE.Group();
+  desktop.name = "Kopi Boy supplied desktop model scaled 3x and repositioned";
+  // Move one step farther back and one step to screen-left.
+  desktop.position.set(-(trainHalfWidth + 4), 0, -1);
+  desktop.rotation.y = Math.PI / 2;
+  desktop.scale.setScalar(3);
+  parent.add(desktop);
+  new GLTFLoader().load("kb_desk_top.glb", gltf => {
+    if (requestId !== aboutSelectionGeneration) return;
+    const model = gltf.scene;
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = bounds.getSize(new THREE.Vector3());
+    if (size.length() < .001 || !model.children.length) {
+      console.error("KB desk top.glb contains no visible model geometry.");
+      return;
+    }
+    const center = bounds.getCenter(new THREE.Vector3());
+    const baseScale = 1.3 / Math.max(size.x, size.z, .001);
+    model.scale.setScalar(baseScale);
+    model.position.set(-center.x * baseScale, -bounds.min.y * baseScale, -center.z * baseScale);
+    model.traverse(node => {
+      if (!node.isMesh) return;
+      node.castShadow = true;
+      node.receiveShadow = true;
+    });
+    desktop.add(model);
+    console.info("Loaded the supplied desktop model at 3x scale with its original material appearance.");
+  }, undefined, error => console.error("Could not load KB desk top.glb.", error));
+
+  new GLTFLoader().load("kb_rider.glb", gltf => {
+    if (requestId !== aboutSelectionGeneration) return;
+    const rider = new THREE.Group();
+    rider.name = "Kopi Boy delivery rider cruising from screen right to left";
+    const model = gltf.scene;
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const modelScale = 1.55 / Math.max(size.y, .001);
+    model.scale.setScalar(modelScale);
+    model.position.set(-center.x * modelScale, -bounds.min.y * modelScale, -center.z * modelScale);
+    model.traverse(node => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = true; } });
+    // Keep the current rider rotation unchanged; move it from screen-right
+    // to screen-left along +Z from the platform-facing view.
+    rider.rotation.y = 0;
+    rider.position.set(-(trainHalfWidth + 1.5), 0, -10.5);
+    rider.userData.cruiseSpeed = 2.05;
+    rider.add(model);
+    parent.add(rider);
+    kopiBoyRider = rider;
+    console.info("Loaded the Kopi Boy rider in front of the desktop, cruising faster in a side profile from screen-right to screen-left.");
+  }, undefined, error => console.error("Could not load KB rider.glb for the Kopi Boy station.", error));
+}
+
+function updateKopiBoyStation(dt, now) {
+  if (kopiBoyRider && station?.visible && selectedDestination?.id === "kopi-boy") {
+    kopiBoyRider.position.z += kopiBoyRider.userData.cruiseSpeed * dt;
+    if (kopiBoyRider.position.z > 10.5) kopiBoyRider.position.z = -10.5;
+    kopiBoyRider.position.y = Math.sin(now * 1.5) * .018;
+  }
+  if (!kopiBoyFireworks || !station?.visible || selectedDestination?.id !== "kopi-boy") return;
+  const { points, bursts, particlesPerBurst, baseColors } = kopiBoyFireworks;
+  const positions = points.geometry.attributes.position.array;
+  const colors = points.geometry.attributes.color.array;
+  bursts.forEach((burst, burstIndex) => {
+    const age = (now + burst.offset) % burst.period;
+    const active = age < burst.lifetime;
+    const fade = active ? 1 - age / burst.lifetime : 0;
+    for (let particle = 0; particle < particlesPerBurst; particle++) {
+      const i = burstIndex * particlesPerBurst + particle, offset = i * 3;
+      if (active) {
+        const distance = burst.speed * age * (.82 + (particle % 7) * .035);
+        const direction = burst.directions[particle];
+        positions[offset] = burst.origin.x + direction.x * distance;
+        positions[offset + 1] = burst.origin.y + direction.y * distance - 1.2 * age * age;
+        positions[offset + 2] = burst.origin.z + direction.z * distance;
+        colors[offset] = baseColors[offset] * fade;
+        colors[offset + 1] = baseColors[offset + 1] * fade;
+        colors[offset + 2] = baseColors[offset + 2] * fade;
+      } else {
+        positions[offset] = 0; positions[offset + 1] = -1000; positions[offset + 2] = 0;
+      }
+    }
+  });
+  points.geometry.attributes.position.needsUpdate = true;
+  points.geometry.attributes.color.needsUpdate = true;
+}
+
+async function loadStationModel(destination) {
+  const requestId = ++aboutSelectionGeneration;
+  creatorStampsFloat = null;
+  aboutSelectionPairs = [];
+  aboutSelectionIndex = 0;
+  aboutSelectionMotion = null;
+  // Kopi Boy uses the supplied models and fireworks without our generated
+  // platform, safety strip, station sign, or post.
+  if (destination?.id === "kopi-boy") stationContent.clear();
+  else buildPlaceholderStation(stationContent);
+  if (destination?.id === "about-me") {
+    buildAboutMeSelection(stationContent, requestId);
+    return true;
+  }
+  if (destination?.id === "kopi-boy") {
+    loadKopiBoyStation(stationContent, requestId);
+    return true;
+  }
+  if (!destination?.modelPath) return false;
+  stationContent.children
+    .filter(child => child.name === "Destination station sign" || child.name === "Placeholder station sign post")
+    .forEach(child => stationContent.remove(child));
+  return new Promise(resolve => {
+    new GLTFLoader().load(destination.modelPath, gltf => {
+      const model = gltf.scene;
+      const mappedMaterials = new Set();
+      let dashboardMaterials = 0;
+      const isArtStation = destination.id === "3d-art";
+      const dashboardTexture = isArtStation ? new THREE.TextureLoader().load(
+        "3d_art_station_dashboard.png",
+        () => console.info("Loaded the supplied 3D Art Station Dashboard image.")
+      ) : null;
+      if (dashboardTexture) dashboardTexture.colorSpace = THREE.SRGBColorSpace;
+      model.traverse(node => {
+        if (!node.isMesh) return;
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        materials.forEach(material => {
+          if (material?.map) mappedMaterials.add(material);
+          prepareStationNightMaterial(material);
+          if (isArtStation && material?.name === "Material.009") {
+            // Material.009 is the large flat display face. Rebuild its UVs
+            // from that face's local XY bounds so the supplied dashboard
+            // image fills the whole screen, independent of the GLB's old UVs.
+            const position = node.geometry.getAttribute("position");
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (let i = 0; i < position.count; i++) {
+              const x = position.getX(i), y = position.getY(i);
+              minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+              minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+            }
+            const uv = new Float32Array(position.count * 2);
+            const width = Math.max(maxX - minX, .0001), height = Math.max(maxY - minY, .0001);
+            for (let i = 0; i < position.count; i++) {
+              uv[i * 2] = (position.getX(i) - minX) / width;
+              uv[i * 2 + 1] = (position.getY(i) - minY) / height;
+            }
+            node.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+            material.map = dashboardTexture;
+            prepareStationNightMaterial(material, dashboardTexture);
+            material.color?.set(0xffffff);
+            material.metalness = 0;
+            material.roughness = .78;
+            material.needsUpdate = true;
+            dashboardMaterials++;
+          }
+        });
+      });
+      console.info(
+        `Loaded ${destination.stationName} model with ${mappedMaterials.size} original embedded-texture materials${isArtStation ? `; dashboard image assigned to ${dashboardMaterials} large display surface(s) with fitted UVs` : ""}.`
+      );
+      const bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const targetWidth = destination.id === "web-development" ? 10 : 2.8;
+      const scale = targetWidth / Math.max(size.x, .001);
+      const placement = new THREE.Group();
+      placement.name = `${destination.stationName} station model placement`;
+      placement.rotation.y = destination.id === "web-development" ? -Math.PI / 2 : Math.PI / 2;
+      // Set the destination model toward the platform's outer edge so it stays
+      // visible from the open train doors.
+      const platformOffset = destination.id === "web-development" ? 2.55 : 4;
+      const alongPlatform = 0;
+      placement.position.set(-(trainHalfWidth + platformOffset), size.y * scale / 2 + .05, alongPlatform);
+      model.scale.setScalar(scale);
+      model.position.copy(center).multiplyScalar(-scale);
+      placement.add(model);
+      stationContent.add(placement);
+      if (destination.id === "3d-art") {
+        loadStationBuilding(stationContent);
+        loadCreatorStamps(stationContent);
+      }
+      console.info(`Loaded ${destination.stationName} station model, centered on platform and facing the train.`);
+      resolve(true);
+    }, undefined, error => {
+      console.warn(`Could not load station model for ${destination.title}; keeping placeholder.`, error);
+      buildPlaceholderStation(stationContent); resolve(false);
+    });
+  });
+}
+
+function buildAboutMeSelection(parent, requestId) {
+  parent.children
+    .filter(child => child.name === "Destination station sign" || child.name === "Placeholder station sign post")
+    .forEach(child => parent.remove(child));
+
+  const loader = new GLTFLoader();
+  aboutPlayers.forEach((profile, index) => {
+    loader.load(profile.model, gltf => {
+      if (requestId !== aboutSelectionGeneration) return;
+      const pair = new THREE.Group();
+      pair.name = `About Me player ${profile.name} model and hero card`;
+      pair.visible = index === aboutSelectionIndex;
+
+      const frameMaterial = new THREE.MeshStandardMaterial({
+        color: 0x07111c,
+        emissive: profile.accent,
+        emissiveIntensity: .22,
+        metalness: .5,
+        roughness: .38
+      });
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(.13, aboutProfileCardHeight + .17, aboutProfileCardWidth + .14),
+        frameMaterial
+      );
+      frame.name = `${profile.name} hero card frame`;
+      frame.position.set(-5.55, 2.08, 0);
+      pair.add(frame);
+
+      const cardTexture = new THREE.TextureLoader().load(
+        profile.card,
+        texture => { texture.colorSpace = THREE.SRGBColorSpace; }
+      );
+      cardTexture.colorSpace = THREE.SRGBColorSpace;
+      cardTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const card = new THREE.Mesh(
+        new THREE.PlaneGeometry(aboutProfileCardWidth, aboutProfileCardHeight),
+        new THREE.MeshBasicMaterial({ map: cardTexture, side: THREE.DoubleSide, toneMapped: false })
+      );
+      card.name = `${profile.name} hero card`;
+      card.rotation.y = Math.PI / 2;
+      card.position.set(-5.475, 2.08, 0);
+      pair.add(card);
+
+      const avatar = new THREE.Group();
+      avatar.name = `${profile.name} player model`;
+      avatar.position.set(-4.52, 0, 2);
+      const model = gltf.scene;
+      const authoredRoot = model.children.find(child => child.isMesh || child.children.length) ?? model;
+      const authoredYaw = new THREE.Euler().setFromQuaternion(authoredRoot.quaternion, "YXZ").y;
+      // The supplied GLBs use different baked-in heading rotations. Counter
+      // each one so every character presents its front toward the train.
+      avatar.rotation.y = Math.PI / 2 + (profile.facingOffset ?? 0) - authoredYaw;
+      model.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const modelScale = 2.2 / Math.max(size.y, .001);
+      model.scale.setScalar(modelScale);
+      model.position.set(-center.x * modelScale, -bounds.min.y * modelScale, -center.z * modelScale);
+      model.traverse(node => {
+        if (!node.isMesh) return;
+        node.castShadow = true;
+        node.receiveShadow = true;
+      });
+      if (gltf.animations.length) {
+        const mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.play();
+        pair.userData.animationMixer = mixer;
+        console.info(`Playing ${gltf.animations[0].name} on the ${profile.name} player model.`);
+      } else {
+        console.warn(`The ${profile.name} model loaded without an animation clip.`);
+      }
+      avatar.add(model);
+      pair.add(avatar);
+      pair.position.z = aboutSelectionBaseZ;
+      parent.add(pair);
+      aboutSelectionPairs[index] = pair;
+      updateAboutPlayerSelector();
+    }, undefined, error => {
+      if (requestId !== aboutSelectionGeneration) return;
+      console.warn(`Could not load the ${profile.name} player model.`, error);
+      updateAboutPlayerSelector();
+    });
+  });
+  updateAboutPlayerSelector();
+}
+
+function updateAboutPlayerSelector() {
+  const selector = $("aboutSelector");
+  if (!selector) return;
+  const player = aboutPlayers[aboutSelectionIndex];
+  const atAboutMe = selectedDestination?.id === "about-me" && !traveling && !outsideStation &&
+    (travelPhase === "doorsOpening" || travelPhase === "arrived");
+  selector.hidden = !atAboutMe;
+  $("aboutPlayerName").textContent = player.name;
+  $("aboutPlayerCount").textContent = `PLAYER ${String(aboutSelectionIndex + 1).padStart(2, "0")} / 04`;
+  const ready = aboutSelectionPairs.length === aboutPlayers.length && aboutSelectionPairs.every(Boolean);
+  $("aboutPrev").disabled = !atAboutMe || !ready || Boolean(aboutSelectionMotion);
+  $("aboutNext").disabled = !atAboutMe || !ready || Boolean(aboutSelectionMotion);
+  selector.dataset.player = player.name.toLowerCase().replaceAll(" ", "-");
+}
+
+function positionAboutSelectorOnBoard() {
+  const selector = $("aboutSelector");
+  const selectedPair = aboutSelectionPairs[aboutSelectionIndex];
+  if (!selector || selector.hidden || !selectedPair || !camera) return;
+
+  selectedPair.updateWorldMatrix(true, true);
+  camera.updateMatrixWorld();
+  // Pin the HTML controls just above the profile board's upper edge so they
+  // follow the board in perspective as the FPV camera moves.
+  const anchor = selectedPair.localToWorld(new THREE.Vector3(-5.475, 4.28, 0));
+  const projected = anchor.project(camera);
+  const onScreen = projected.z >= -1 && projected.z <= 1 &&
+    projected.x >= -1.2 && projected.x <= 1.2 &&
+    projected.y >= -1.2 && projected.y <= 1.2;
+  selector.style.visibility = onScreen ? "visible" : "hidden";
+  if (!onScreen) return;
+  selector.style.left = `${(projected.x * .5 + .5) * innerWidth}px`;
+  selector.style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
+}
+
+function changeAboutPlayer(direction) {
+  if (aboutSelectionMotion || aboutSelectionPairs.length !== aboutPlayers.length || !aboutSelectionPairs.every(Boolean)) return;
+  const nextIndex = (aboutSelectionIndex + direction + aboutPlayers.length) % aboutPlayers.length;
+  const outgoing = aboutSelectionPairs[aboutSelectionIndex];
+  const incoming = aboutSelectionPairs[nextIndex];
+  if (!outgoing || !incoming) return;
+  const incomingFrom = direction > 0 ? -1.7 : 1.7;
+  incoming.visible = true;
+  incoming.position.z = aboutSelectionBaseZ + incomingFrom;
+  incoming.scale.setScalar(.96);
+  aboutSelectionMotion = { outgoing, incoming, incomingFrom, elapsed: 0, duration: .58 };
+  aboutSelectionIndex = nextIndex;
+  updateAboutPlayerSelector();
+}
+
+function updateAboutPlayerSelection(dt) {
+  if (!aboutSelectionMotion) return;
+  const motion = aboutSelectionMotion;
+  motion.elapsed += dt;
+  const t = THREE.MathUtils.clamp(motion.elapsed / motion.duration, 0, 1);
+  const eased = t * t * (3 - 2 * t);
+  motion.outgoing.position.z = aboutSelectionBaseZ - motion.incomingFrom * eased;
+  motion.incoming.position.z = aboutSelectionBaseZ + motion.incomingFrom * (1 - eased);
+  motion.outgoing.scale.setScalar(1 - .04 * eased);
+  motion.incoming.scale.setScalar(.96 + .04 * eased);
+  if (t >= 1) {
+    motion.outgoing.visible = false;
+    motion.outgoing.position.z = aboutSelectionBaseZ;
+    motion.outgoing.scale.setScalar(1);
+    motion.incoming.position.z = aboutSelectionBaseZ;
+    motion.incoming.scale.setScalar(1);
+    aboutSelectionMotion = null;
+    updateAboutPlayerSelector();
+  }
+}
+
+function updateCamera() {
+  camera.fov = zoom; camera.updateProjectionMatrix();
+  camera.position.copy(fpvPosition);
+  const cp = Math.cos(pitch);
+  const direction = new THREE.Vector3(Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
+  camera.lookAt(camera.position.clone().add(direction));
+}
+
+function updateFpvMovement(dt) {
+  if (!running || traveling) return;
+  const forwardAxis = Number(pressedKeys.has("w") || pressedKeys.has("arrowup"))
+    - Number(pressedKeys.has("s") || pressedKeys.has("arrowdown"));
+  const strafeAxis = Number(pressedKeys.has("d") || pressedKeys.has("arrowright"))
+    - Number(pressedKeys.has("a") || pressedKeys.has("arrowleft"));
+  if (!forwardAxis && !strafeAxis) return;
+
+  const forwardX = Math.sin(yaw), forwardZ = -Math.cos(yaw);
+  const rightX = Math.cos(yaw), rightZ = Math.sin(yaw);
+  const direction = new THREE.Vector3(
+    forwardX * forwardAxis + rightX * strafeAxis,
+    0,
+    forwardZ * forwardAxis + rightZ * strafeAxis
+  ).normalize();
+  const speed = pressedKeys.has("shift") ? 5.5 : 3.2;
+  const atStation = travelPhase === "arrived";
+  let nextX = fpvPosition.x + direction.x * speed * dt;
+  let nextZ = fpvPosition.z + direction.z * speed * dt;
+  if (!atStation) {
+    fpvPosition.x = THREE.MathUtils.clamp(nextX, fpvBounds.minX, fpvBounds.maxX);
+    fpvPosition.z = THREE.MathUtils.clamp(nextZ, fpvBounds.minZ, fpvBounds.maxZ);
+    return;
+  }
+  const platformDoors = sideDoorPanels.filter(door => door.side < 0);
+  const doorPlaneX = platformDoors.length
+    ? platformDoors.reduce((sum, door) => sum + door.worldX, 0) / platformDoors.length
+    : -trainHalfWidth;
+    nextZ = THREE.MathUtils.clamp(nextZ, fpvBounds.minZ, fpvBounds.maxZ);
+    const doorsOpen = doorTarget > .5 && doorProgress > .94;
+    const alignedWithOpenDoor = doorsOpen && platformDoors.some(door => Math.abs(door.worldZ - nextZ) < 1.05);
+  if (!outsideStation) {
+      const insideLimit = alignedWithOpenDoor ? doorPlaneX - .45 : doorPlaneX + .16;
+      nextX = THREE.MathUtils.clamp(nextX, Math.min(fpvBounds.minX, insideLimit), fpvBounds.maxX);
+      if (nextX < doorPlaneX - .18) {
+        if (alignedWithOpenDoor) {
+        outsideStation = true;
+        $("stationInfo").hidden = true;
+          $("stationHud").textContent = `${selectedDestination.title} • ON PLATFORM`;
+        setTabletState();
+        } else nextX = doorPlaneX + .16;
+    }
+  } else {
+      const outsideLimit = alignedWithOpenDoor ? doorPlaneX + .45 : doorPlaneX - .18;
+      nextX = THREE.MathUtils.clamp(nextX, doorPlaneX - 4.8, outsideLimit);
+    nextZ = THREE.MathUtils.clamp(nextZ, stationStopZ - 8.1, stationStopZ + 8.1);
+      if (nextX > doorPlaneX + .18) {
+      if (alignedWithOpenDoor) {
+        outsideStation = false;
+        setDoorTarget(false);
+        $("stationHud").textContent = "BACK IN TRAIN • CLOSING DOORS";
+        setTabletState();
+        } else nextX = doorPlaneX - .18;
+    }
+  }
+  fpvPosition.x = nextX;
+  fpvPosition.z = nextZ;
+}
+
+function setTabletState() {
+    $("doorBtn").disabled = traveling || outsideStation || travelPhase !== "arrived";
+    $("doorBtn").innerHTML = doorTarget > .5 ? "<b>▾</b> CLOSE SIDE DOORS" : "<b>▴</b> OPEN SIDE DOORS";
+  if (outsideStation) $("tabletStatus").textContent = `ON PLATFORM • ${selectedDestination?.title ?? "STATION"}`;
+  else if (travelPhase === "doorsClosingForTravel") $("tabletStatus").textContent = "CLOSING DOORS…";
+  else if (traveling) $("tabletStatus").textContent = `TRAVELLING TO ${selectedDestination?.title ?? "STATION"}`;
+    else if (travelPhase === "doorsOpening") $("tabletStatus").textContent = "SIDE DOORS OPENING…";
+    else if (travelPhase === "arrived" && doorProgress < .03) $("tabletStatus").textContent = "DOORS CLOSED • AT STATION";
+    else if (travelPhase === "arrived") $("tabletStatus").textContent = "DOORS OPEN • WALK THROUGH";
+  else $("tabletStatus").textContent = "TRAIN READY";
+  document.querySelectorAll("[data-station]").forEach(button => { button.disabled = traveling || outsideStation || travelPhase === "doorsClosing"; });
+  updateAboutPlayerSelector();
+}
+function setJourneyPanelOpen(isOpen, persist = true) {
+  const panel = $("tabletUI"), toggle = $("journeyToggle");
+  panel.hidden = !isOpen;
+  toggle.hidden = isOpen;
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  if (persist) {
+    try { localStorage.setItem("rajiniMetroJourneyPanel", isOpen ? "open" : "closed"); }
+    catch (error) { console.warn("Could not save the journey panel preference.", error); }
+  }
+}
+function showStation() {
+  station.visible = true;
+  // Keep the station at its world position while the exterior scrolls past it.
+  station.position.set(0, 0, fpvPosition.z - outside.position.z);
+  loadStationModel(selectedDestination);
+  const kopiBoyStop = selectedDestination?.id === "kopi-boy";
+  $("hud").classList.toggle("kopiBoyNoHud", kopiBoyStop);
+  $("stationWorldLabel").textContent = `${selectedDestination.stationName.toUpperCase()} STATION`;
+  $("stationWorldLabel").style.display = kopiBoyStop ? "none" : "block";
+  $("stationDescription").textContent = selectedDestination.description;
+  $("stationContent").textContent = selectedDestination.placeholderContent;
+    $("stationInfo").hidden = true;
+}
+function hideStation() { station.visible = false; $("hud").classList.remove("kopiBoyNoHud"); $("stationWorldLabel").style.display = "none"; $("stationInfo").hidden = true; }
+function beginTravel(destination) {
+  if (!destination || traveling || outsideStation || travelPhase === "doorsClosing") return;
+  selectedDestination = destination;
+  $("hud").classList.remove("kopiBoyNoHud");
+  traveling = true; travelPhase = "doorsClosingForTravel";
+  setDoorTarget(false);
+  $("stationHud").textContent = "CLOSING DOORS";
+  setTabletState();
+}
+function arrive() {
+  traveling = false; travelPhase = "doorsOpening"; setDoorTarget(true);
+  // The placeholder platform is on world -X. With this train's measured
+  // orientation, that is the side whose source-model Z is negative.
+  const platformDoors = sideDoorPanels.filter(door => door.side < 0);
+  const closestDoor = platformDoors.reduce((best, door) =>
+    !best || Math.abs(door.worldZ - fpvPosition.z) < Math.abs(best.worldZ - fpvPosition.z) ? door : best, null);
+  if (closestDoor) fpvPosition.z = closestDoor.worldZ;
+    stationStopZ = fpvPosition.z;
+    fpvPosition.x = 0;
+  showStation();
+  // Face the platform as the side doors open, while keeping FPV movement enabled.
+  yaw = -Math.PI / 2; pitch = 0;
+  $("stationHud").textContent = `ARRIVED — ${selectedDestination.title}`;
+  setTabletState();
+}
+function setupInput() {
+  const navigationKeys = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"]);
+  let journeyPanelOpen = true;
+  try { journeyPanelOpen = localStorage.getItem("rajiniMetroJourneyPanel") !== "closed"; } catch {}
+  setJourneyPanelOpen(journeyPanelOpen, false);
+  $("journeyClose").addEventListener("click", event => {
+    event.stopPropagation();
+    setJourneyPanelOpen(false);
+  });
+  $("journeyToggle").addEventListener("click", event => {
+    event.stopPropagation();
+    setJourneyPanelOpen(true);
+  });
+  canvas.addEventListener("pointerdown", e => {
+    if (!running || e.button !== 0) return;
+    canvas.focus({ preventScroll: true });
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvas.setPointerCapture?.(e.pointerId);
+  });
+  document.querySelectorAll("#touchControls [data-move]").forEach(button => {
+    const key = button.dataset.move;
+    const release = event => {
+      event.preventDefault();
+      pressedKeys.delete(key);
+      button.classList.remove("pressed");
+    };
+    button.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      if (!running) return;
+      pressedKeys.add(key);
+      button.classList.add("pressed");
+      button.setPointerCapture?.(event.pointerId);
+    });
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+      button.addEventListener(type, release);
+  });
+  document.querySelectorAll("#touchControls [data-turn]").forEach(button => {
+    const direction = button.dataset.turn;
+    const release = event => {
+      event.preventDefault();
+      activeTouchTurns.delete(direction);
+      button.classList.remove("pressed");
+    };
+    button.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      if (!running) return;
+      activeTouchTurns.add(direction);
+      button.classList.add("pressed");
+      button.setPointerCapture?.(event.pointerId);
+    });
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+      button.addEventListener(type, release);
+  });
+  canvas.addEventListener("pointerup", () => { dragging = false; });
+  canvas.addEventListener("pointercancel", () => { dragging = false; });
+  canvas.addEventListener("pointermove", e => {
+    if (!dragging || !running) return;
+    yaw -= (e.clientX - lastX) * .004;
+    pitch = THREE.MathUtils.clamp(pitch - (e.clientY - lastY) * .0025, -1.15, 1.05);
+    lastX = e.clientX; lastY = e.clientY; updateCamera();
+  });
+  window.addEventListener("pointerup", () => { dragging = false; });
+  window.addEventListener("wheel", e => {
+    if (!running) return;
+    // Ctrl+wheel and ordinary wheel both zoom, while events over the tablet remain native.
+    if (e.target.closest?.("#tabletUI")) return;
+    zoom = THREE.MathUtils.clamp(zoom + (e.deltaY > 0 ? 4 : -4), 20, 112);
+    updateCamera();
+  }, { passive: true });
+  document.querySelectorAll("#tabletUI button[data-station]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (traveling || outsideStation) return;
+      const destination = destinations.find(item => item.id === button.dataset.station);
+      beginTravel(destination);
+      canvas.focus({ preventScroll: true });
+    });
+  });
+  $("doorBtn").addEventListener("click", () => {
+      if (traveling || outsideStation || travelPhase !== "arrived") return;
+      setDoorTarget(doorTarget < .5);
+    setTabletState();
+    $("doorBtn").blur();
+  });
+  $("aboutPrev").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(-1); });
+  $("aboutNext").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(1); });
+  $("startBtn").addEventListener("click", () => {
+    $("startOverlay").classList.add("startHidden"); running = true;
+    $("stationHud").textContent = "IN TRANSIT"; setTabletState(); updateCamera();
+  });
+  $("continueBtn").addEventListener("click", () => { finishLoading(); $("continueBtn").hidden = true; });
+  $("reloadBtn").addEventListener("click", () => location.reload());
+  window.addEventListener("keydown", e => {
+    const key = e.key.toLowerCase();
+    if (!running || e.target.closest?.("#tabletUI")) return;
+    if (navigationKeys.has(key)) {
+      const firstPress = !pressedKeys.has(key);
+      pressedKeys.add(key);
+      if (firstPress) updateFpvMovement(.08);
+      e.preventDefault();
+    } else if (key === "shift") pressedKeys.add("shift");
+  });
+  window.addEventListener("keyup", e => pressedKeys.delete(e.key.toLowerCase()));
+  window.addEventListener("blur", () => {
+    pressedKeys.clear(); dragging = false;
+    activeTouchTurns.clear();
+    document.querySelectorAll("#touchControls .pressed").forEach(button => button.classList.remove("pressed"));
+  });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const elapsed = clock.getDelta();
+  const dt = Math.min(elapsed, .05), now = clock.elapsedTime;
+  if (running && activeTouchTurns.size) {
+    const turnAxis = Number(activeTouchTurns.has("right")) - Number(activeTouchTurns.has("left"));
+    yaw += turnAxis * 1.8 * dt;
+  }
+  if (creatorStampsFloat) {
+    const { items, scale } = creatorStampsFloat;
+    for (const item of items) {
+      const { pivot, base, phase, speed, xDrift, yDrift, zDrift } = item;
+      const t = now * speed + phase;
+      pivot.position.x = base.x + Math.sin(t) * xDrift / scale;
+      pivot.position.y = base.y + Math.sin(t * .73 + phase) * yDrift / scale;
+      pivot.position.z = base.z + Math.cos(t * .87 + phase) * zDrift / scale;
+    }
+  }
+  updateDoors(dt);
+  updatePartition(elapsed);
+  updateAboutPlayerSelection(dt);
+  for (const pair of aboutSelectionPairs) {
+    if (pair?.visible && pair.userData.animationMixer) pair.userData.animationMixer.update(dt);
+  }
+  updateKopiBoyStation(dt, now);
+  updateFpvMovement(dt);
+  if (running && !outsideStation) {
+    const activeTrain = trainModelRoot || train;
+    activeTrain.position.y = traveling ? Math.sin(now * 19) * .018 : Math.sin(now * 9) * .004;
+    activeTrain.rotation.x = traveling ? Math.sin(now * 7) * .0012 : 0;
+  }
+  if (traveling && travelPhase === "doorsClosingForTravel" && doorProgress < .03) {
+    travelPhase = "travelling"; travelStart = now;
+    $("stationHud").textContent = `TRAVELLING TO ${selectedDestination.title}`;
+    $("arrivalTitle").textContent = selectedDestination.title;
+    $("arrival").classList.remove("hidden");
+    window.setTimeout(() => $("arrival").classList.add("hidden"), 1400);
+    setTabletState();
+  }
+  if (running && traveling && travelPhase === "travelling") {
+    outside.position.z = (outside.position.z + dt * 24) % 240;
+    updateCyberpunkEnvironment(dt);
+    scene.background.setHSL(.56, .18, .48 + .11 * Math.sin(now * 1.4));
+    scene.fog.color.copy(scene.background);
+    if (now - travelStart > 4.2) arrive();
+  } else if (!stationNightMode) {
+    scene.background.set(0x9fb8c9); scene.fog.color.set(0x9fb8c9);
+  }
+  const atNightStation = ["3d-art", "web-development", "kopi-boy"].includes(selectedDestination?.id) && !traveling &&
+    (travelPhase === "doorsOpening" || travelPhase === "arrived" || outsideStation);
+  setStationNightMode(atNightStation);
+  const atWebDevelopmentStation = selectedDestination?.id === "web-development" && !traveling &&
+    (travelPhase === "doorsOpening" || travelPhase === "arrived" || outsideStation);
+  for (const item of cyberpunkCityInstances) item.building.visible = !atWebDevelopmentStation;
+  if (travelPhase === "doorsOpening" && doorProgress > .97) { travelPhase = "arrived"; setTabletState(); }
+  if (travelPhase === "doorsClosing" && doorProgress < .03) { travelPhase = "idle"; selectedDestination = null; setTabletState(); }
+  if (travelPhase === "arrived") {
+    if (doorTarget > .5 && doorProgress < .97) $("tabletStatus").textContent = "SIDE DOORS OPENING…";
+    else if (doorTarget < .5 && doorProgress > .03) $("tabletStatus").textContent = "SIDE DOORS CLOSING…";
+    else if (doorTarget < .5) $("tabletStatus").textContent = "DOORS CLOSED • AT STATION";
+    else $("tabletStatus").textContent = "DOORS OPEN • WALK THROUGH";
+  }
+  updateCamera();
+  positionAboutSelectorOnBoard();
+  renderer.render(scene, camera);
+}
+
+async function initialize() {
+  setLoading("INITIALISING RAJINI METRO…");
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  } catch (error) {
+    console.error("WebGL renderer could not be created.", error);
+    showFatalError("This browser could not start WebGL. Try an updated browser with hardware acceleration enabled.");
+    return;
+  }
+  try {
+    buildScene();
+    setupInput();
+    window.addEventListener("resize", () => {
+      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    });
+    clock.start();
+    // Seat GLB callback controls when the ready state is shown.
+    animate();
+  } catch (error) {
+    console.error("Application initialization failed.", error);
+    showFatalError("Rajini Metro could not finish starting. Check the browser console for details.");
+  }
+}
+
+initialize();
