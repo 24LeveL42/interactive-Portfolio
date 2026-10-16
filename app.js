@@ -412,11 +412,12 @@ function loadMonsterTruck() {
       minX: -trainHalfWidth + .18, maxX: trainHalfWidth - .18,
       minZ: -trainCarriageLength / 2 + .25, maxZ: trainCarriageLength / 2 - .25
     };
-    // Move the driver view two small increments upward and one step forward,
-    // while keeping it below the measured roof height.
+    // Place the driver view at the raised, forward position inside the cab.
     const driverEyeHeight = Math.max(1.8, size.y * modelScale * .70);
-    fpvPosition.set(-.38, Math.min(size.y * modelScale * .88, driverEyeHeight + .3), .92);
-    yaw = Math.PI;
+    fpvPosition.set(-.38, Math.min(size.y * modelScale * .88, driverEyeHeight + .3), -.92);
+    // The truck's nose points toward local -Z after the model alignment;
+    // face the FPV through the windshield instead of toward the rear cabin.
+    yaw = 0;
     pitch = 0;
     train.visible = false;
     trainModelRoot.updateMatrixWorld(true);
