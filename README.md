@@ -38,7 +38,7 @@ The supplied desk-top GLB includes the desktop screen and keyboard and is used o
 
 ## 3D Art station
 
-The supplied figures stay in a stationary row facing the truck and rotate gently in place. Each figure is normalized to a 2.2-unit display height using world-space bounds, so baked GLB parent transforms do not make the models appear miniature. The row is positioned farther from the truck, and each display circle spins slowly in a random direction.
+The supplied figures stay in a stationary row facing the truck and rotate gently in place. Each figure is normalized to a 3.3-unit display height using world-space bounds, with its pivot raised to keep its feet on the ground. The row is spaced to fit the larger models and positioned farther from the truck. Each display circle spins slowly in a random direction.
 
 
 ## Journey panel

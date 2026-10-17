@@ -512,7 +512,7 @@ function arrangeArtStationRow() {
   const figures = artSpinPivots.filter(spinner => !spinner.isCircle);
   const circles = artSpinPivots.filter(spinner => spinner.isCircle);
   const usedCircles = new Set();
-  const rowSpacing = 2.8;
+  const rowSpacing = 4.1;
   figures.forEach((figure, index) => {
     const circle = circles.find(candidate => !usedCircles.has(candidate)
       && candidate.authoredPosition.distanceTo(figure.authoredPosition) < .002)
@@ -520,7 +520,7 @@ function arrangeArtStationRow() {
     if (!circle) return;
     usedCircles.add(circle);
     const rowZ = (index - (figures.length - 1) / 2) * rowSpacing;
-    figure.pivot.position.set(0, 1.1, rowZ);
+    figure.pivot.position.set(0, 1.65, rowZ);
     // The welcome line runs alongside the truck's lane. Imported characters
     // face +Z; turn them toward the truck from the lineup's +X side (-X).
     figure.baseYaw = -Math.PI / 2 - figure.authoredYaw;
@@ -533,7 +533,7 @@ function arrangeArtStationRow() {
 function sizeArtStationDisplays(sceneScale) {
   // Make the figures read as full-size people from the truck-side camera.
   // World-space bounds account for baked parent scales in the supplied GLB.
-  const figureHeight = 2.2;
+  const figureHeight = 3.3;
   const displayDiameter = 1.15;
   for (const spinner of artSpinPivots) {
     const { node, isCircle } = spinner;
@@ -546,6 +546,7 @@ function sizeArtStationDisplays(sceneScale) {
     } else {
       const currentHeight = size.y * sceneScale;
       node.scale.multiplyScalar(figureHeight / Math.max(currentHeight, .001));
+      spinner.pivot.position.y = figureHeight / 2;
     }
   }
 }
