@@ -531,9 +531,9 @@ function arrangeArtStationRow() {
 }
 
 function sizeArtStationDisplays(sceneScale) {
-  // Match the moving delivery rider's 1.55-unit height. Measure each mesh in
-  // world space so baked parent scales in the supplied GLB cannot shrink it.
-  const figureHeight = 1.55;
+  // Make the figures read as full-size people from the truck-side camera.
+  // World-space bounds account for baked parent scales in the supplied GLB.
+  const figureHeight = 2.2;
   const displayDiameter = 1.15;
   for (const spinner of artSpinPivots) {
     const { node, isCircle } = spinner;
@@ -1202,7 +1202,7 @@ async function loadStationModel(destination) {
         : isArtStation ? 0 : Math.PI / 2;
       // The Art lineup runs front-to-back beside the vehicle lane; all other
       // station models remain at their usual outer platform edge.
-      const platformOffset = isArtStation ? 9 : destination.id === "web-development" ? 2.55 : 4;
+      const platformOffset = isArtStation ? 11 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(
         isArtStation ? trainHalfWidth + platformOffset : -(trainHalfWidth + platformOffset),
