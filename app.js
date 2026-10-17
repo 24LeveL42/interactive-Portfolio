@@ -1065,11 +1065,11 @@ function loadKopiBoyStation(parent, requestId) {
   addKopiBoyLaunchBanner(parent);
 
   const desktop = new THREE.Group();
-  desktop.name = "Kopi Boy supplied desktop model scaled 20x and moved 15 steps farther from the truck";
-  // Move seven more steps outward from the previous placement, keeping it on the platform.
-  desktop.position.set(-(trainHalfWidth + 19), 0, -1);
+  desktop.name = "Kopi Boy supplied desktop model scaled 10x, moved 12 steps farther from the truck and 3 steps screen-right";
+  // Move three steps screen-right while keeping the desktop on the platform.
+  desktop.position.set(-(trainHalfWidth + 16), 0, -1);
   desktop.rotation.y = Math.PI / 2;
-  desktop.scale.setScalar(20);
+  desktop.scale.setScalar(10);
   parent.add(desktop);
   new GLTFLoader().load("KB desktop LARGE Vsn.glb", gltf => {
     if (requestId !== aboutSelectionGeneration) return;
@@ -1091,7 +1091,7 @@ function loadKopiBoyStation(parent, requestId) {
       node.receiveShadow = true;
     });
     desktop.add(model);
-    console.info("Loaded the supplied desktop model at 5x its previous displayed size, seven more steps farther from the truck.");
+    console.info("Loaded the supplied desktop model at half its previous displayed size, three steps screen-right.");
   }, undefined, error => console.error("Could not load KB desk top.glb.", error));
 
   new GLTFLoader().load("kb_rider.glb", gltf => {
