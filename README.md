@@ -32,7 +32,7 @@ The FBX files were converted to animated GLB files so the browser can load each 
 
 ## Kopi Boy station
 
-The Kopi Boy stop uses `KB desktop LARGE Vsn.glb` and the supplied delivery rider model with colorful animated fireworks. The desktop is scaled to 3x, positioned four steps back and one step to screen-left, with no added screen or bezel glow. A neon banner above it reads “NEXT PROJECT · LAUNCHING SOON.” The rider keeps its current rotation and travels from screen-right to screen-left in front of the desktop. The generated placeholder platform, station sign, and top HUD are hidden at this stop.
+The Kopi Boy stop uses `KB desktop LARGE Vsn.glb` and the supplied delivery rider model with colorful animated fireworks. The desktop is scaled to 4x its previous displayed size and moved three additional steps away from the truck, with no added screen or bezel glow. A neon banner above it reads “NEXT PROJECT · LAUNCHING SOON.” The rider keeps its current rotation and travels from screen-right to screen-left in front of the desktop. The generated placeholder platform, station sign, and top HUD are hidden at this stop.
 
 The supplied desk-top GLB includes the desktop screen and keyboard and is used on its own without the extra panel or procedural table.
 
