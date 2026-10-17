@@ -1065,9 +1065,9 @@ function loadKopiBoyStation(parent, requestId) {
   addKopiBoyLaunchBanner(parent);
 
   const desktop = new THREE.Group();
-  desktop.name = "Kopi Boy supplied desktop model scaled 26.67x, farther right, 3 steps back and 1 step from truck";
-  // Keep its screen-right placement; move two more steps back from the current position.
-  desktop.position.set(-(trainHalfWidth + 6), 0, -4);
+  desktop.name = "Kopi Boy supplied desktop model scaled 26.67x, 5 steps farther from the truck";
+  // Keep its right/back placement; move four more steps outward from the truck.
+  desktop.position.set(-(trainHalfWidth + 10), 0, -4);
   desktop.rotation.y = Math.PI / 2;
   desktop.scale.setScalar(26.6666667);
   parent.add(desktop);
