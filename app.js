@@ -1417,8 +1417,11 @@ function updateFpvMovement(dt) {
     }
   } else {
       const outsideLimit = alignedWithOpenDoor ? doorPlaneX + .45 : doorPlaneX - .18;
-      nextX = THREE.MathUtils.clamp(nextX, doorPlaneX - 4.8, outsideLimit);
-    nextZ = THREE.MathUtils.clamp(nextZ, stationStopZ - 8.1, stationStopZ + 8.1);
+      const isKopiBoyStop = selectedDestination?.id === "kopi-boy";
+      const platformReach = isKopiBoyStop ? 32 : 4.8;
+      const stationWalkRange = isKopiBoyStop ? 30 : 8.1;
+      nextX = THREE.MathUtils.clamp(nextX, doorPlaneX - platformReach, outsideLimit);
+      nextZ = THREE.MathUtils.clamp(nextZ, stationStopZ - stationWalkRange, stationStopZ + stationWalkRange);
       if (nextX > doorPlaneX + .18) {
       if (alignedWithOpenDoor) {
         outsideStation = false;
