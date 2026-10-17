@@ -36,6 +36,10 @@ The Kopi Boy stop uses `kb_desk_top.glb` and the supplied delivery rider model w
 
 The supplied desk-top GLB includes the desktop screen and keyboard and is used on its own without the extra panel or procedural table.
 
+## 3D Art station
+
+The supplied figures stay in a stationary row facing the truck and rotate gently in place. Each figure is normalized to the moving delivery rider's 1.55-unit height using world-space bounds, so baked GLB parent transforms do not make the models appear miniature. The row is positioned farther from the truck, and each display circle spins slowly in a random direction.
+
 
 ## Journey panel
 

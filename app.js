@@ -531,20 +531,20 @@ function arrangeArtStationRow() {
 }
 
 function sizeArtStationDisplays(sceneScale) {
-  const figureHeight = 2.2;
+  // Match the moving delivery rider's 1.55-unit height. Measure each mesh in
+  // world space so baked parent scales in the supplied GLB cannot shrink it.
+  const figureHeight = 1.55;
   const displayDiameter = 1.15;
   for (const spinner of artSpinPivots) {
     const { node, isCircle } = spinner;
-    node.geometry.computeBoundingBox();
-    const size = node.geometry.boundingBox.getSize(new THREE.Vector3());
+    node.updateWorldMatrix(true, false);
+    const worldBounds = new THREE.Box3().setFromObject(node);
+    const size = worldBounds.getSize(new THREE.Vector3());
     if (isCircle) {
-      const currentDiameter = Math.max(
-        size.x * Math.abs(node.scale.x),
-        size.z * Math.abs(node.scale.z)
-      ) * sceneScale;
+      const currentDiameter = Math.max(size.x, size.z) * sceneScale;
       node.scale.multiplyScalar(displayDiameter / Math.max(currentDiameter, .001));
     } else {
-      const currentHeight = size.y * Math.abs(node.scale.y) * sceneScale;
+      const currentHeight = size.y * sceneScale;
       node.scale.multiplyScalar(figureHeight / Math.max(currentHeight, .001));
     }
   }
@@ -1202,7 +1202,7 @@ async function loadStationModel(destination) {
         : isArtStation ? 0 : Math.PI / 2;
       // The Art lineup runs front-to-back beside the vehicle lane; all other
       // station models remain at their usual outer platform edge.
-      const platformOffset = isArtStation ? 7 : destination.id === "web-development" ? 2.55 : 4;
+      const platformOffset = isArtStation ? 9 : destination.id === "web-development" ? 2.55 : 4;
       const alongPlatform = 0;
       placement.position.set(
         isArtStation ? trainHalfWidth + platformOffset : -(trainHalfWidth + platformOffset),
