@@ -1022,7 +1022,7 @@ function addKopiBoyLaunchBanner(parent) {
   ctx.fillStyle = "#b7efff";
   ctx.shadowColor = "#3acfff";
   ctx.shadowBlur = 18;
-  ctx.fillText("DESIGNING UPCOMING PROJECT", canvas.width / 2, 83);
+  ctx.fillText("NEXT PROJECT", canvas.width / 2, 83);
   const launch = ctx.createLinearGradient(220, 0, 804, 0);
   launch.addColorStop(0, "#ff67ef");
   launch.addColorStop(.52, "#fff08a");
@@ -1031,10 +1031,10 @@ function addKopiBoyLaunchBanner(parent) {
   ctx.fillStyle = launch;
   ctx.shadowColor = "#ed57ff";
   ctx.shadowBlur = 24;
-  ctx.fillText("2027 LAUNCH!!!", canvas.width / 2, 183);
+  ctx.fillText("LAUNCHING SOON", canvas.width / 2, 183);
 
   const banner = new THREE.Group();
-  banner.name = "Kopi Boy 2027 project launch banner";
+  banner.name = "Kopi Boy next project launch banner";
   banner.position.set(-(trainHalfWidth + 4), 4.45, -1);
   banner.rotation.y = Math.PI / 2;
   const frame = new THREE.Mesh(
