@@ -1071,7 +1071,7 @@ function loadKopiBoyStation(parent, requestId) {
   desktop.rotation.y = Math.PI / 2;
   desktop.scale.setScalar(3);
   parent.add(desktop);
-  new GLTFLoader().load("kb_desk_top.glb", gltf => {
+  new GLTFLoader().load("KB desktop LARGE Vsn.glb", gltf => {
     if (requestId !== aboutSelectionGeneration) return;
     const model = gltf.scene;
     model.updateMatrixWorld(true);
