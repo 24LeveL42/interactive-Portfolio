@@ -1065,11 +1065,11 @@ function loadKopiBoyStation(parent, requestId) {
   addKopiBoyLaunchBanner(parent);
 
   const desktop = new THREE.Group();
-  desktop.name = "Kopi Boy supplied desktop model scaled 20x, one step nearer the truck and 3 steps screen-right";
-  // Shift one step toward the truck and three steps to screen-right.
-  desktop.position.set(-(trainHalfWidth + 12), 0, -1);
+  desktop.name = "Kopi Boy supplied desktop model scaled 40x, 2 steps nearer the truck and 3 steps screen-right";
+  // Shift two steps toward the truck and three steps to screen-right.
+  desktop.position.set(-(trainHalfWidth + 7), 0, -1);
   desktop.rotation.y = Math.PI / 2;
-  desktop.scale.setScalar(20);
+  desktop.scale.setScalar(40);
   parent.add(desktop);
   new GLTFLoader().load("KB desktop LARGE Vsn.glb", gltf => {
     if (requestId !== aboutSelectionGeneration) return;
