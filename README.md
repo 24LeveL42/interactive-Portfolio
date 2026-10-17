@@ -21,7 +21,7 @@ No build step is required. The page loads Three.js and GLTFLoader from jsDelivr,
 
 ## About Me player animations
 
-The four player models use the supplied FBX characters and loop their matching animation clips:
+The four player models use the supplied FBX characters and loop their matching animation clips. The player-selection controls are part of the Portfolio Journey panel and appear there at the About Me stop:
 
 - Casual: Moonwalk
 - Fitness: Jog Forward
@@ -32,7 +32,7 @@ The FBX files were converted to animated GLB files so the browser can load each 
 
 ## Kopi Boy station
 
-The Kopi Boy stop uses the supplied desktop and delivery rider models with colorful animated fireworks. The desktop is scaled to 3x, positioned four steps back and one step to screen-left, with no added screen or bezel glow. The rider keeps its current rotation and travels from screen-right to screen-left in front of the desktop. The generated placeholder platform, station sign, and top HUD are hidden at this stop.
+The Kopi Boy stop uses `kb_desk_top.glb` and the supplied delivery rider model with colorful animated fireworks. The desktop is scaled to 3x, positioned four steps back and one step to screen-left, with no added screen or bezel glow. A neon banner above it reads “DESIGNING UPCOMING PROJECT · 2027 LAUNCH!!!” The rider keeps its current rotation and travels from screen-right to screen-left in front of the desktop. The generated placeholder platform, station sign, and top HUD are hidden at this stop.
 
 The supplied desk-top GLB includes the desktop screen and keyboard and is used on its own without the extra panel or procedural table.
 

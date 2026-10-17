@@ -78,10 +78,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .tablet{width:min(310px,27vw);max-height:82vh;padding:16px;right:3%}
 .tablet button{padding:9px 10px;margin:5px 0}
 #tabletStatus{margin-top:13px;color:#ffcf4a;font-size:9px;letter-spacing:1px;line-height:1.5}
-#aboutSelector{position:fixed;z-index:22;left:50%;top:50%;transform:translate(-50%,-100%);width:min(270px,25vw);margin:0;padding:14px;border:1px solid #65d9ff;border-radius:14px;background:linear-gradient(135deg,#07111df7,#11132bf7);box-shadow:inset 0 0 24px #1776a544,0 0 12px #35cfffaa,0 0 34px #087baf88,0 0 62px #087baf44;backdrop-filter:blur(8px);pointer-events:auto;animation:aboutSelectorGlow 2.4s ease-in-out infinite}
+#aboutSelector{position:relative;z-index:auto;width:100%;margin:10px 0 0;padding:12px;border:1px solid #65d9ff;border-radius:12px;background:linear-gradient(135deg,#07111df7,#11132bf7);box-shadow:inset 0 0 24px #1776a544,0 0 12px #35cfffaa,0 0 28px #087baf66;backdrop-filter:blur(8px);pointer-events:auto;animation:aboutSelectorGlow 2.4s ease-in-out infinite}
 @keyframes aboutSelectorGlow{0%,100%{border-color:#55c5ff;box-shadow:inset 0 0 22px #1776a533,0 0 10px #35cfff88,0 0 28px #087baf66,0 0 48px #087baf33}50%{border-color:#b5f0ff;box-shadow:inset 0 0 30px #1776a566,0 0 17px #6be0ffdd,0 0 44px #087bafaa,0 0 74px #087baf66}}
 #aboutSelector[hidden]{display:none}
-#aboutSelector::after{content:"";position:absolute;left:50%;bottom:-13px;width:1px;height:13px;background:#55c5ff;box-shadow:0 0 8px #35cfff;pointer-events:none}
+#aboutSelector::after{display:none}
 .aboutSelectorHeading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#71d7ff;font-size:8px;letter-spacing:1.5px}
 .aboutSelectorHeading strong{color:#f1caff;font-size:9px;letter-spacing:1.2px}
 .aboutSelectorControls{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;margin-top:9px}
@@ -100,7 +100,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .stationInfo a:hover{border-color:#ffe09a;color:#fff0bf;box-shadow:0 0 16px #d99a3855}
 @media(max-width:800px){
  .tablet{right:12px;top:auto;bottom:12px;transform:none;width:min(290px,48vw);max-height:58vh;padding:12px}
- #aboutSelector{width:min(250px,38vw);padding:11px}
+ #aboutSelector{width:100%;padding:11px}
  .tabletTop strong{font-size:13px}
  .tabletSub{margin:10px 0 6px}
  .tablet button{padding:7px 9px;margin:4px 0;font-size:10px}
@@ -111,7 +111,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 @media(max-width:520px){
  .journeyToggle{right:8px;bottom:8px;padding:10px 12px;font-size:10px}
  .tablet{width:min(230px,56vw);max-height:54vh;padding:9px;right:8px;bottom:8px;border-radius:15px}
- #aboutSelector{width:min(190px,38vw);padding:9px}
+ #aboutSelector{width:100%;padding:9px}
  .aboutSelectorControls{grid-template-columns:34px 1fr 34px;gap:5px}
  .aboutSelectorControls .playerArrow{width:34px;height:34px}
  .tabletTop strong{font-size:11px}

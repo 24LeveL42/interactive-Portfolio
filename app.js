@@ -1002,9 +1002,66 @@ function addKopiBoyFireworks(parent) {
   kopiBoyFireworks = { points, bursts, particlesPerBurst, baseColors: colors.slice() };
 }
 
+function addKopiBoyLaunchBanner(parent) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  background.addColorStop(0, "#07152d");
+  background.addColorStop(.52, "#171034");
+  background.addColorStop(1, "#082137");
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#40dfff";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "700 48px Arial, sans-serif";
+  ctx.fillStyle = "#b7efff";
+  ctx.shadowColor = "#3acfff";
+  ctx.shadowBlur = 18;
+  ctx.fillText("DESIGNING UPCOMING PROJECT", canvas.width / 2, 83);
+  const launch = ctx.createLinearGradient(220, 0, 804, 0);
+  launch.addColorStop(0, "#ff67ef");
+  launch.addColorStop(.52, "#fff08a");
+  launch.addColorStop(1, "#ff9f50");
+  ctx.font = "900 76px Arial, sans-serif";
+  ctx.fillStyle = launch;
+  ctx.shadowColor = "#ed57ff";
+  ctx.shadowBlur = 24;
+  ctx.fillText("2027 LAUNCH!!!", canvas.width / 2, 183);
+
+  const banner = new THREE.Group();
+  banner.name = "Kopi Boy 2027 project launch banner";
+  banner.position.set(-(trainHalfWidth + 4), 4.45, -1);
+  banner.rotation.y = Math.PI / 2;
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(6.2, 1.72, .2),
+    new THREE.MeshStandardMaterial({
+      color: 0x11142b, emissive: 0x6d27cf, emissiveIntensity: .85,
+      metalness: .55, roughness: .3
+    })
+  );
+  frame.name = "Neon launch banner frame";
+  banner.add(frame);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.95, 1.48),
+    new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false })
+  );
+  sign.name = "Designing upcoming project 2027 launch sign face";
+  sign.position.z = .112;
+  banner.add(sign);
+  parent.add(banner);
+}
+
 function loadKopiBoyStation(parent, requestId) {
   kopiBoyRider = null;
   addKopiBoyFireworks(parent);
+  addKopiBoyLaunchBanner(parent);
 
   const desktop = new THREE.Group();
   desktop.name = "Kopi Boy supplied desktop model scaled 3x and repositioned";
@@ -1269,26 +1326,6 @@ function updateAboutPlayerSelector() {
   $("aboutPrev").disabled = !atAboutMe || !ready || Boolean(aboutSelectionMotion);
   $("aboutNext").disabled = !atAboutMe || !ready || Boolean(aboutSelectionMotion);
   selector.dataset.player = player.name.toLowerCase().replaceAll(" ", "-");
-}
-
-function positionAboutSelectorOnBoard() {
-  const selector = $("aboutSelector");
-  const selectedPair = aboutSelectionPairs[aboutSelectionIndex];
-  if (!selector || selector.hidden || !selectedPair || !camera) return;
-
-  selectedPair.updateWorldMatrix(true, true);
-  camera.updateMatrixWorld();
-  // Pin the HTML controls just above the profile board's upper edge so they
-  // follow the board in perspective as the FPV camera moves.
-  const anchor = selectedPair.localToWorld(new THREE.Vector3(-5.475, 4.28, 0));
-  const projected = anchor.project(camera);
-  const onScreen = projected.z >= -1 && projected.z <= 1 &&
-    projected.x >= -1.2 && projected.x <= 1.2 &&
-    projected.y >= -1.2 && projected.y <= 1.2;
-  selector.style.visibility = onScreen ? "visible" : "hidden";
-  if (!onScreen) return;
-  selector.style.left = `${(projected.x * .5 + .5) * innerWidth}px`;
-  selector.style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
 }
 
 function changeAboutPlayer(direction) {
@@ -1649,7 +1686,6 @@ function animate() {
     $("tabletStatus").textContent = "DESTINATION REACHED • STEP OUT WHEN READY";
   }
   updateCamera();
-  positionAboutSelectorOnBoard();
   renderer.render(scene, camera);
 }
 
