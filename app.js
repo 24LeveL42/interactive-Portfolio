@@ -1019,11 +1019,11 @@ function addKopiBoyLaunchBanner(parent) {
   ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "700 48px Arial, sans-serif";
+  ctx.font = "700 40px Arial, sans-serif";
   ctx.fillStyle = "#b7efff";
   ctx.shadowColor = "#3acfff";
   ctx.shadowBlur = 18;
-  ctx.fillText("NEXT PROJECT", canvas.width / 2, 83);
+  ctx.fillText("KOPI BOY!!!  •  NEXT PROJECT", canvas.width / 2, 83);
   const launch = ctx.createLinearGradient(220, 0, 804, 0);
   launch.addColorStop(0, "#ff67ef");
   launch.addColorStop(.52, "#fff08a");
@@ -1065,9 +1065,9 @@ function loadKopiBoyStation(parent, requestId) {
   addKopiBoyLaunchBanner(parent);
 
   const desktop = new THREE.Group();
-  desktop.name = "Kopi Boy supplied desktop model scaled 26.67x, farther right, 1 step back and 1 step from truck";
-  // Keep its screen-right and back placement; move one step farther from the truck.
-  desktop.position.set(-(trainHalfWidth + 6), 0, -2);
+  desktop.name = "Kopi Boy supplied desktop model scaled 26.67x, farther right, 3 steps back and 1 step from truck";
+  // Keep its screen-right placement; move two more steps back from the current position.
+  desktop.position.set(-(trainHalfWidth + 6), 0, -4);
   desktop.rotation.y = Math.PI / 2;
   desktop.scale.setScalar(26.6666667);
   parent.add(desktop);
