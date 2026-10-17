@@ -2,7 +2,9 @@
 
 A static Three.js portfolio experience. The current About Me player boards are 2.5x their previous size, and the selected character stands beside the board.
 
-The welcome screen uses the supplied `portfolio-landing.png` artwork. Its Start Exploring button begins the 3D experience, and its fullscreen control requests browser fullscreen.
+The welcome screen uses the supplied `portfolio-landing.png` artwork. Its destination cards open their stations directly; Start Exploring begins the driving experience. The scroll prompt is covered, and the fullscreen control requests browser fullscreen.
+
+The Contact stop links to the portfolio owner's GitHub profile at `https://github.com/24Level42`. Background music uses `portfolio-music.mp3` and starts after the visitor's first interaction. The sound button toggles playback. Music credit: “Deflector” by Ghostrifter Official, licensed under CC BY-NC 3.0, via BreakingCopyright. See the Music credits link in the page for the creator, license, track, and source links.
 
 ## Run locally
 

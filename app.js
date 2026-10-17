@@ -39,6 +39,7 @@ let sideDoorPanels = [];
 let trainHalfWidth = 1.8;
 let assetsReady = 0, assetsRequired = 1;
 let running = false, traveling = false, outsideStation = false;
+let portfolioMusicEnabled = false;
 let selectedDestination = null;
 const fpvPosition = new THREE.Vector3(0, 1.58, 1.35);
 let stationStopZ = 0;
@@ -62,6 +63,26 @@ function setLoading(message, error = false) {
 }
 
 function finishLoading() { loading.style.display = "none"; }
+
+async function setPortfolioMusic(enabled) {
+  const audio = $("portfolioMusic");
+  const button = $("musicToggle");
+  if (enabled) {
+    try {
+      await audio.play();
+      portfolioMusicEnabled = true;
+    } catch (error) {
+      portfolioMusicEnabled = false;
+      console.info("Music playback needs another user interaction or an available audio file.", error);
+    }
+  } else {
+    audio.pause();
+    portfolioMusicEnabled = false;
+  }
+  button.setAttribute("aria-pressed", String(portfolioMusicEnabled));
+  button.setAttribute("aria-label", portfolioMusicEnabled ? "Turn music off" : "Turn music on");
+  button.querySelector("span").textContent = portfolioMusicEnabled ? "SOUND ON" : "SOUND OFF";
+}
 function markAssetReady() {
   assetsReady++;
   if (assetsReady >= assetsRequired) finishLoading();
@@ -1403,8 +1424,12 @@ function showStation() {
   $("stationWorldLabel").textContent = `${selectedDestination.stationName.toUpperCase()} STATION`;
   $("stationWorldLabel").style.display = kopiBoyStop ? "none" : "block";
   $("stationDescription").textContent = selectedDestination.description;
-  $("stationContent").textContent = selectedDestination.placeholderContent;
-    $("stationInfo").hidden = true;
+  const contactStop = selectedDestination?.id === "contact";
+  $("stationContent").textContent = contactStop
+    ? "Thanks for visiting my portfolio. Connect with me on GitHub."
+    : selectedDestination.placeholderContent;
+  $("stationContactLink").hidden = !contactStop;
+  $("stationInfo").hidden = !contactStop;
 }
 function hideStation() { station.visible = false; $("hud").classList.remove("kopiBoyNoHud"); $("stationWorldLabel").style.display = "none"; $("stationInfo").hidden = true; }
 function beginTravel(destination) {
@@ -1423,6 +1448,25 @@ function arrive() {
   showStation();
   $("stationHud").textContent = `ARRIVED — ${selectedDestination.title}`;
   setTabletState();
+}
+function visitStationDirectly(destination) {
+  if (!destination || traveling || outsideStation) return;
+  $("startOverlay").classList.add("startHidden");
+  $("arrival").classList.add("hidden");
+  document.body.classList.add("portfolioStarted");
+  running = true;
+  traveling = false;
+  outsideStation = false;
+  selectedDestination = destination;
+  travelPhase = "doorsOpening";
+  stationStopZ = fpvPosition.z;
+  setDoorTarget(true);
+  showStation();
+  $("stationHud").textContent = `ARRIVED — ${destination.title}`;
+  setTabletState();
+  updateCamera();
+  canvas.focus({ preventScroll: true });
+  setPortfolioMusic(true);
 }
 function setupInput() {
   const navigationKeys = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"]);
@@ -1501,10 +1545,18 @@ function setupInput() {
       canvas.focus({ preventScroll: true });
     });
   });
+  document.querySelectorAll("#landingDestinations [data-direct-station]").forEach(button => {
+    button.addEventListener("click", () => {
+      const destination = destinations.find(item => item.id === button.dataset.directStation);
+      visitStationDirectly(destination);
+    });
+  });
+  $("musicToggle").addEventListener("click", () => setPortfolioMusic(!portfolioMusicEnabled));
   $("aboutPrev").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(-1); });
   $("aboutNext").addEventListener("click", event => { event.stopPropagation(); changeAboutPlayer(1); });
   $("startBtn").addEventListener("click", () => {
-    $("startOverlay").classList.add("startHidden"); running = true;
+    $("startOverlay").classList.add("startHidden"); document.body.classList.add("portfolioStarted"); running = true;
+    setPortfolioMusic(true);
     $("stationHud").textContent = "DRIVING"; setTabletState(); updateCamera();
   });
   $("landingFullscreen").addEventListener("click", async () => {

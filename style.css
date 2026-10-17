@@ -93,9 +93,11 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .playerSelectionName strong{color:#fff;font-size:11px;letter-spacing:1.1px}
 .playerSelectionName small{margin-top:4px;color:#92acc4;font-size:8px;letter-spacing:1px}
 .aboutSelectorHint{display:block;margin:8px 0 0;text-align:center;color:#829bb1;font-size:7px;letter-spacing:1.7px}
-.stationInfo{position:fixed;z-index:16;left:50%;top:27%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;max-width:min(440px,82vw);padding:15px 20px;border:1px solid #55c5ff;border-radius:10px;background:#06111ddd;color:#eaf3ff;text-align:center;box-shadow:0 0 28px #001c2f;pointer-events:none}
+.stationInfo{position:fixed;z-index:16;left:50%;top:27%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;max-width:min(440px,82vw);padding:15px 20px;border:1px solid #55c5ff;border-radius:10px;background:#06111ddd;color:#eaf3ff;text-align:center;box-shadow:0 0 28px #001c2f;pointer-events:auto}
 .stationInfo[hidden]{display:none}
 .stationInfo span{font-size:12px;color:#9fc9df}
+.stationInfo a{align-self:center;margin-top:3px;padding:9px 14px;border:1px solid #58bde9;border-radius:8px;background:#0b2639;color:#dff7ff;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none}
+.stationInfo a:hover{border-color:#ffe09a;color:#fff0bf;box-shadow:0 0 16px #d99a3855}
 @media(max-width:800px){
  .tablet{right:12px;top:auto;bottom:12px;transform:none;width:min(290px,48vw);max-height:58vh;padding:12px}
  #aboutSelector{width:min(250px,38vw);padding:11px}
@@ -143,9 +145,35 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
 .landingStart{position:absolute;left:4.05%;top:55.5%;width:23.8%;height:8.2%;margin:0!important;padding:0!important;border:0!important;border-radius:10px;background:transparent!important;box-shadow:none!important;cursor:pointer;transition:filter .18s,transform .18s}
 .landingStart:hover{filter:brightness(1.25);transform:scale(1.025)}
 .landingStart:focus-visible,.landingFullscreen:focus-visible{outline:3px solid #fff2a5;outline-offset:3px}
+.landingDestinations{position:absolute;inset:0;z-index:52;pointer-events:none}
+.landingDestination{position:absolute;top:75.5%;height:8.7%;margin:0;padding:0 8px;border:1px solid transparent;border-radius:10px;background:transparent;color:transparent;cursor:pointer;pointer-events:auto}
+.landingDestination:nth-child(1){left:12.2%;width:12.9%}
+.landingDestination:nth-child(2){left:25.8%;width:14.1%}
+.landingDestination:nth-child(3){left:40.6%;width:15.8%}
+.landingDestination:nth-child(4){left:57.3%;width:15.8%}
+.landingDestination:nth-child(5){left:74%;width:15%}
+.landingDestination:not(.landingContactTile):hover{border-color:#7bdfffaa;background:#20aaff18;box-shadow:0 0 18px #27bfff55}
+.landingDestination:focus-visible{outline:2px solid #fff2a5;outline-offset:2px;background:#20aaff20}
+.landingDestination.landingContactTile{display:flex;align-items:center;justify-content:center;gap:10px;border-color:#e443ff;background:linear-gradient(115deg,#100c25f5,#260d32ed);color:#fff;box-shadow:0 0 18px #de3cff55,inset 0 0 16px #b42eff22;text-align:left}
+.landingContactTile b{color:#ff62f2;font-size:clamp(14px,1.8vw,26px)}
+.landingContactTile span,.landingContactTile strong,.landingContactTile small{display:block}
+.landingContactTile strong{font-size:clamp(8px,.85vw,13px);letter-spacing:.8px}
+.landingContactTile small{margin-top:3px;color:#c6a4db;font-size:clamp(6px,.58vw,9px);letter-spacing:.7px}
+.landingContactTile:hover{border-color:#fff!important;box-shadow:0 0 24px #e84affaa,inset 0 0 20px #b42eff44!important}
+.landingPromptMask{position:absolute;left:30%;top:87.3%;width:40%;height:9.2%;background:linear-gradient(90deg,transparent 0%,#030713e8 10%,#030713f2 90%,transparent 100%);pointer-events:none}
 .landingFullscreen{position:absolute;right:1.4%;top:2.2%;width:13.6%;height:5.6%;margin:0!important;padding:0!important;border:0!important;border-radius:10px;background:transparent!important;color:transparent!important;box-shadow:none!important;cursor:pointer}
 .landingFullscreen span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 .landingMobileCopy{display:none}
+.musicToggle{position:fixed;z-index:55;left:74.8%;top:2.5%;width:9.2%;height:5.2%;margin:0;padding:0;border:0;border-radius:10px;background:transparent;color:#f1ecff;font-size:clamp(9px,.8vw,13px);font-weight:700;letter-spacing:.7px;cursor:pointer;text-shadow:0 0 8px #17002b}
+.musicToggle span{font-size:.82em}
+.musicToggle:hover,.musicToggle:focus-visible{outline:1px solid #d26dff;background:#a82bff22;box-shadow:0 0 18px #c34bff77}
+.musicCredits{position:fixed;z-index:31;right:18px;bottom:16px;max-width:min(460px,72vw);font-size:10px;color:#d7e7f8;text-shadow:0 1px 5px #000;background:#06111ddd;border:1px solid #34516a;border-radius:9px;box-shadow:0 5px 20px #0008}
+.musicCredits summary{padding:8px 11px;color:#dba4ff;letter-spacing:.7px;cursor:pointer;list-style:none}
+.musicCredits summary::-webkit-details-marker{display:none}
+.musicCredits div{padding:0 11px 10px;line-height:1.6}
+.musicCredits a{color:#8bdcff;text-decoration:underline}
+body.portfolioStarted .musicToggle{left:auto;right:24px;top:14px;width:auto;height:34px;padding:0 12px;border:1px solid #9c65bd;background:#111026db;color:#f4eaff;box-shadow:0 3px 14px #0008}
+body.portfolioStarted .musicCredits{bottom:14px}
 @media(max-width:700px),(max-aspect-ratio:1/1){
  .startArtwork{object-position:60% center;filter:brightness(.58)}
  .landingMobileCopy{position:absolute;display:flex;flex-direction:column;gap:12px;left:7%;right:7%;top:17%;max-width:500px;text-shadow:0 3px 18px #000}
@@ -157,4 +185,13 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070c;col
  .landingStart::after{content:'»  START EXPLORING';font-size:16px}
  .landingFullscreen{right:7%;top:5%;width:auto;height:auto;padding:10px 13px!important;border:1px solid #58caff!important;background:#061326d9!important;color:#eaf7ff!important;border-radius:9px}
  .landingFullscreen::after{content:'⛶';font-size:20px}
+ .landingDestinations{inset:auto 7% 23%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;height:48px}
+ .landingDestination,.landingDestination:nth-child(n){position:relative;inset:auto;width:auto;height:100%;padding:4px 2px;border:1px solid #497392;border-radius:8px;background:#071321eF;color:#eaf7ff;font-size:clamp(7px,2vw,10px);font-weight:800;letter-spacing:.1px;text-align:center;box-shadow:0 0 10px #12426866}
+ .landingContactTile b{display:none}
+ .landingContactTile strong{font-size:inherit;letter-spacing:inherit}
+ .landingContactTile small{display:none}
+ .landingPromptMask{display:none}
+ .musicToggle{left:auto;right:29%;top:5%;width:auto;height:38px;padding:0 9px;border:1px solid #aa69cc;border-radius:9px;background:#100d25db;color:#f5ebff}
+ .musicCredits{right:8px;bottom:8px;max-width:76vw;font-size:9px}
+ body.portfolioStarted .musicToggle{right:12px;top:12px}
 }

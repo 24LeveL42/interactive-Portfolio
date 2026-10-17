@@ -58,19 +58,34 @@
 </div>
 
 <div id="stationWorldLabel">STATION</div>
-<div id="stationInfo" class="stationInfo" hidden><strong id="stationDescription"></strong><span id="stationContent"></span></div>
+<div id="stationInfo" class="stationInfo" hidden><strong id="stationDescription"></strong><span id="stationContent"></span><a id="stationContactLink" href="https://github.com/24Level42" target="_blank" rel="noopener noreferrer" hidden>GITHUB · @24Level42</a></div>
 
 <section id="startOverlay" class="startOverlay" aria-label="Rajini Kumar Portfolio welcome screen">
   <img class="startArtwork" src="portfolio-landing.png" alt="Rajini Kumar Portfolio — Explore, Create, Experience">
   <h1 class="visuallyHidden">Rajini Kumar Portfolio — Explore, Create, Experience</h1>
   <button id="startBtn" class="landingStart" type="button" aria-label="Start exploring the portfolio"></button>
   <button id="landingFullscreen" class="landingFullscreen" type="button" aria-label="Enter fullscreen">⛶ <span>ENTER FULLSCREEN</span></button>
+  <nav id="landingDestinations" class="landingDestinations" aria-label="Visit a portfolio station directly">
+    <button type="button" class="landingDestination" data-direct-station="about-me" aria-label="Go directly to About Me">ABOUT ME</button>
+    <button type="button" class="landingDestination" data-direct-station="3d-art" aria-label="Go directly to 3D Art">3D ART</button>
+    <button type="button" class="landingDestination" data-direct-station="web-development" aria-label="Go directly to Web Development">WEB DEVELOPMENT</button>
+    <button type="button" class="landingDestination" data-direct-station="about-me" aria-label="Go directly to About Me, SAF Experience">SAF EXPERIENCE</button>
+    <button type="button" class="landingDestination landingContactTile" data-direct-station="contact" aria-label="Go directly to Contact"><b>✉</b><span><strong>CONTACT</strong><small>GET IN TOUCH</small></span></button>
+  </nav>
+  <div class="landingPromptMask" aria-hidden="true"></div>
   <div class="landingMobileCopy" aria-hidden="true">
     <span>WELCOME TO MY WORLD</span>
     <strong>EXPLORE<br><em>CREATE</em><br>EXPERIENCE</strong>
     <small>Take the driver’s seat and explore my journey.</small>
   </div>
 </section>
+
+<button id="musicToggle" class="musicToggle" type="button" aria-label="Turn music on" aria-pressed="false">♫ <span>SOUND OFF</span></button>
+<details class="musicCredits">
+  <summary>Music credits</summary>
+  <div>“Deflector” by <a href="https://www.youtube.com/channel/UCoRhkLdsX2OKwaEjwdZIQ8Q" target="_blank" rel="noopener noreferrer">Ghostrifter Official</a> · <a href="https://creativecommons.org/licenses/by-nc/3.0/" target="_blank" rel="noopener noreferrer">CC BY-NC 3.0</a> · via <a href="https://www.youtube.com/watch?v=_wgDtAzpWd4" target="_blank" rel="noopener noreferrer">BreakingCopyright</a> · <a href="https://breakingcopyright.com" target="_blank" rel="noopener noreferrer">breakingcopyright.com</a></div>
+</details>
+<audio id="portfolioMusic" src="portfolio-music.mp3" loop preload="none"></audio>
 
 <div id="controlsHint">Drag mouse to look • WASD / arrows to move • Shift faster • Wheel zoom • Explore the station when stopped</div>
 
